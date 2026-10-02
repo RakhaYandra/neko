@@ -40,6 +40,17 @@ Full schemas: `packages/protocol/src/index.ts` (`parseMessage`).
 
 All other OpenCode events are ignored by the allow-list.
 
+## Permission reply (Phase 5, ADR-004)
+
+- Plugin forwards `permission.asked.id` as `payload.requestId`.
+- Rust keeps a memory-only pending registry; snapshot carries `pending[]`.
+- UI calls Tauri command `reply_permission({requestId, reply})` with
+  `reply ∈ {once, always, deny}`; Rust POSTs
+  `{NEKO_OPENCODE_URL}/permission/{requestID}/reply`.
+- Serve unreachable → command errors, entry restored for retry.
+  Already-settled (404 `PermissionNotFound`) → entry dropped.
+- Full rules: `SECURITY-GUIDE.md`.
+
 ## E2E smoke (zero LLM cost)
 
 ```sh
@@ -53,6 +64,4 @@ curl -X POST 127.0.0.1:18789/session -H 'content-type: application/json' -d '{}'
 
 ## Deferred
 
-- Reply path (allow/deny from Neko UI) is NOT implemented; needs a
-  `serve`-HTTP/SDK spike before Phase 5. Plugin stays observe-only.
 - `session.completed`/`todo.updated` carry empty payloads; Phase 3 enriches.

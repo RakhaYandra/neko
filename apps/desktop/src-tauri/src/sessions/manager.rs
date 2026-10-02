@@ -1,6 +1,7 @@
 //! Session registry (Phase 3). Owns the state machine, persistence, and the
 //! UI snapshot. Unknown session IDs are created on demand as `idle`.
 
+use super::permissions::PendingPermission;
 use super::state::{transition, EventKind, Outcome, SessionStatus};
 use super::storage::{self, SessionRow};
 use sqlx::SqlitePool;
@@ -9,6 +10,7 @@ use std::collections::HashMap;
 pub struct SessionManager {
     pool: SqlitePool,
     sessions: HashMap<String, SessionRow>,
+    pending: HashMap<String, PendingPermission>,
 }
 
 impl SessionManager {
@@ -22,7 +24,11 @@ impl SessionManager {
             .into_iter()
             .map(|s| (s.id.clone(), s))
             .collect();
-        Ok(Self { pool, sessions })
+        Ok(Self {
+            pool,
+            sessions,
+            pending: HashMap::new(),
+        })
     }
 
     /// Apply one validated Neko event. Returns the changed session, if any.
@@ -50,7 +56,77 @@ impl SessionManager {
             }
         }
         self.record(sid, neko_type, now).await;
+        if neko_type == "permission.requested" {
+            self.register_pending(sid, payload, now);
+        } else if neko_type == "permission.resolved" {
+            self.clear_pending(sid, payload);
+        }
         self.sessions.get(sid).cloned()
+    }
+
+    fn register_pending(&mut self, sid: &str, payload: &serde_json::Value, now: i64) {
+        let Some(request_id) = payload.get("requestId").and_then(|v| v.as_str()) else {
+            return; // TUI-only session: no reply key, observe-only.
+        };
+        let action = payload
+            .get("action")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+        let resource = payload
+            .get("resource")
+            .and_then(|v| v.as_str())
+            .map(str::to_string);
+        self.pending.insert(
+            request_id.to_string(),
+            PendingPermission {
+                request_id: request_id.to_string(),
+                session_id: sid.to_string(),
+                action,
+                resource,
+                asked_at_ms: now,
+            },
+        );
+    }
+
+    fn clear_pending(&mut self, sid: &str, payload: &serde_json::Value) {
+        if let Some(id) = payload.get("requestId").and_then(|v| v.as_str()) {
+            self.pending.remove(id);
+            return;
+        }
+        self.pending.retain(|_, p| p.session_id != sid);
+    }
+
+    /// Take a pending request for an explicit UI reply. Removal is the
+    /// single gate: without it no HTTP can fire. Re-insert on failure.
+    pub fn take_pending(&mut self, request_id: &str) -> Option<PendingPermission> {
+        self.pending.remove(request_id)
+    }
+
+    pub fn reinsert_pending(&mut self, p: PendingPermission) {
+        self.pending.insert(p.request_id.clone(), p);
+    }
+
+    /// Mark the owning session resolved after a successful reply.
+    pub async fn resolve_local(&mut self, session_id: &str) {
+        let now = storage::now_ms();
+        if self.ensure(session_id, now).await.is_none() {
+            return;
+        }
+        if transition(
+            self.sessions
+                .get(session_id)
+                .map(|s| s.status)
+                .unwrap_or(SessionStatus::Idle),
+            EventKind::PermissionResolved,
+        ) == Outcome::Changed(SessionStatus::Working)
+        {
+            self.set_status(session_id, SessionStatus::Working, now, None)
+                .await;
+        } else {
+            self.touch(session_id, now).await;
+        }
+        self.record(session_id, "permission.resolved", now).await;
     }
 
     /// Sessions ordered by recent activity; first is the active one.
@@ -61,6 +137,7 @@ impl SessionManager {
     }
 
     /// Minimal mirror snapshot for the UI. No payloads, no prompts.
+    /// Pending requests ride along so the bubble can render exact keys.
     pub fn snapshot(&self) -> serde_json::Value {
         let sessions: Vec<serde_json::Value> = self
             .ordered()
@@ -76,11 +153,26 @@ impl SessionManager {
                 })
             })
             .collect();
+        let mut pending: Vec<&PendingPermission> = self.pending.values().collect();
+        pending.sort_by_key(|p| p.asked_at_ms);
+        let pending: Vec<serde_json::Value> = pending
+            .iter()
+            .map(|p| {
+                serde_json::json!({
+                    "requestId": p.request_id,
+                    "sessionId": p.session_id,
+                    "action": p.action,
+                    "resource": p.resource,
+                    "askedAt": p.asked_at_ms,
+                })
+            })
+            .collect();
         serde_json::json!({
             "v": 1,
             "type": "sessions.snapshot",
             "at": storage::now_ms(),
             "sessions": sessions,
+            "pending": pending,
         })
     }
 
@@ -283,5 +375,44 @@ mod tests {
         let s = m2.sessions.get("a").unwrap();
         assert_eq!(s.status, SessionStatus::Disconnected);
         assert_eq!(m2.ordered().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn pending_registry_take_and_snapshot() {
+        let mut m = mem_manager().await;
+        m.apply("session.created", Some("a"), &serde_json::json!({}))
+            .await;
+        m.apply(
+            "permission.requested",
+            Some("a"),
+            &serde_json::json!({"action":"bash","resource":"echo *","requestId":"per_1"}),
+        )
+        .await;
+        let snap = m.snapshot();
+        let pending = snap.get("pending").unwrap().as_array().unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].get("requestId").unwrap(), "per_1");
+
+        // Take gates the reply; second take fails (single-shot).
+        let p = m.take_pending("per_1").unwrap();
+        assert_eq!(p.session_id, "a");
+        assert!(m.take_pending("per_1").is_none());
+
+        // External resolution clears by exact id.
+        m.reinsert_pending(p);
+        m.apply(
+            "permission.resolved",
+            Some("a"),
+            &serde_json::json!({"decision":"allow","requestId":"per_1"}),
+        )
+        .await;
+        assert!(m
+            .snapshot()
+            .get("pending")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .is_empty());
+        assert_eq!(m.sessions.get("a").unwrap().status, SessionStatus::Working);
     }
 }

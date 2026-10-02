@@ -7,7 +7,7 @@ working, waiting-permission, completed, error — without opening the terminal.
 
 ## Status
 
-Phase 4 — companion UI (Stitch sprite poses + session picker).
+Phase 5 — permission control (bubble + serve reply). Needs `opencode serve` and `NEKO_OPENCODE_URL`; see `docs/SECURITY-GUIDE.md`.
 
 ## Layout
 

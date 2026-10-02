@@ -7,20 +7,31 @@ export interface NekoSession {
   lastActivityAt: number;
 }
 
+export interface PendingRequest {
+  requestId: string;
+  sessionId: string;
+  action: string;
+  resource: string | null;
+  askedAt: number;
+}
+
 interface SessionsState {
   sessions: NekoSession[];
+  pending: PendingRequest[];
   selectedId: string | null;
-  setSnapshot: (sessions: NekoSession[]) => void;
+  setSnapshot: (sessions: NekoSession[], pending?: PendingRequest[]) => void;
   select: (id: string | null) => void;
 }
 
 // Mirror only: transitions live in Rust (Phase 3). Never infer state here.
 export const useSessions = create<SessionsState>((set) => ({
   sessions: [],
+  pending: [],
   selectedId: null,
-  setSnapshot: (sessions) =>
+  setSnapshot: (sessions, pending = []) =>
     set((s) => ({
       sessions,
+      pending,
       // Drop selection when its session disappears.
       selectedId: sessions.some((x) => x.id === s.selectedId) ? s.selectedId : null,
     })),

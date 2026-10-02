@@ -26,6 +26,7 @@ tokio = { version = "1", features = ["net", "io-util", "macros", "rt-multi-threa
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sqlx = { version = "0.9.0", features = ["sqlite", "runtime-tokio"] }
+reqwest = { version = "0.13.5", features = ["json"] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

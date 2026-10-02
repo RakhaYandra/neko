@@ -76,6 +76,7 @@ export const NekoPlugin = async ({ $ }: any) => {
         await send("permission.resolved", sessionId, {
           ...(action ? { action } : {}),
           decision: normalizeDecision(p.response ?? p.reply),
+          ...(p.requestID != null ? { requestId: String(p.requestID) } : {}),
         });
       } else if (event.type === "file.edited") {
         await send("file.edited", sessionId, {

@@ -63,6 +63,7 @@ export const permissionResolved = base.extend({
   payload: z.object({
     action: z.string().optional(),
     decision: z.enum(["allow", "deny"]),
+    requestId: z.string().optional(),
   }),
 });
 
