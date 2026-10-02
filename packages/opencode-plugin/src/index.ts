@@ -64,9 +64,12 @@ export const NekoPlugin = async ({ $ }: any) => {
         await send("session.diff", sessionId, { files });
       } else if (event.type === "permission.asked") {
         const patterns = Array.isArray(p.patterns) ? p.patterns.join(",") : undefined;
+        // `id` is the reply key (R4). `permission` already names the tool;
+        // upstream `tool` is an object {messageID, callID}, not forwarded.
         await send("permission.requested", sessionId, {
           action: String(p.permission ?? "unknown"),
           ...(patterns ? { resource: patterns } : {}),
+          ...(p.id != null ? { requestId: String(p.id) } : {}),
         });
       } else if (event.type === "permission.replied") {
         const action = p.permission != null ? String(p.permission) : undefined;

@@ -49,11 +49,21 @@ test("event hook adapts session.idle and permission.asked to neko types", async 
     payload: { status: "completed" },
   });
   await hooks.event({
-    event: { type: "permission.asked", properties: { sessionID: "ses_2", permission: "bash" } },
+    event: {
+      type: "permission.asked",
+      properties: {
+        id: "per_1",
+        sessionID: "ses_2",
+        permission: "bash",
+        tool: { messageID: "m", callID: "c" },
+      },
+    },
   });
   const perm = lastEnvelope(captured);
   assert.equal(perm.type, "permission.requested");
   assert.equal(perm.payload.action, "bash");
+  assert.equal(perm.payload.requestId, "per_1");
+  assert.ok(!("tool" in perm.payload));
 });
 
 test("tool hook emits tool.started envelope", async () => {

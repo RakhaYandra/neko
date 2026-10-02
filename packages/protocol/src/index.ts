@@ -26,6 +26,7 @@ export const permissionRequested = base.extend({
   payload: z.object({
     action: z.string(),
     resource: z.string().optional(),
+    requestId: z.string().optional(),
   }),
 });
 
