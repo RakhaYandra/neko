@@ -7,7 +7,7 @@ working, waiting-permission, completed, error — without opening the terminal.
 
 ## Status
 
-Phase 1 — foundation. See `docs/` (Phase 0 report lives in spike dir).
+Phase 2 — OpenCode event bridge. See `docs/API-GUIDE.md`.
 
 ## Layout
 

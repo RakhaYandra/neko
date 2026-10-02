@@ -1,4 +1,7 @@
-mod ipc;
+pub mod ipc;
+
+use std::sync::Arc;
+use tauri::Emitter;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -22,6 +25,23 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet])
+        .setup(|app| {
+            let handle = app.handle().clone();
+            let sock = ipc::socket_path();
+            tauri::async_runtime::spawn(async move {
+                match ipc::bind(&sock).await {
+                    Ok(listener) => {
+                        tracing::info!(sock = %sock, "ipc listening");
+                        let on_event: ipc::EventCb = Arc::new(move |_t, line| {
+                            let _ = handle.emit("neko-event", line);
+                        });
+                        ipc::serve_on(listener, on_event).await;
+                    }
+                    Err(e) => tracing::error!(sock = %sock, error = %e, "ipc bind failed"),
+                }
+            });
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

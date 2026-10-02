@@ -1,4 +1,4 @@
-// Neko OpenCode plugin (observe-only, Phase 1).
+// Neko OpenCode plugin (observe-only, Phase 2).
 // Adapts OpenCode hooks into the Neko envelope (ADR-003):
 // `{v:1, type:"<neko.type>", at, sessionId, payload}`.
 // Fire-and-forget: `|| true` so the agent never blocks on Neko.
@@ -6,12 +6,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type NekoStatus = "idle" | "working" | "tool_running" | "completed" | "error";
 
-// Live OpenCode status strings are verified in Phase 2; unknown maps to
-// "idle" (no known activity) rather than inventing a busier state.
+// Unknown OpenCode status strings map to "idle" (no known activity)
+// rather than inventing a busier state.
 function normalizeStatus(s: unknown): NekoStatus {
   if (s === "idle" || s === "working" || s === "tool_running" || s === "completed" || s === "error")
     return s;
   return "idle";
+}
+
+// Fail-closed display decision: only explicit approvals read as allow.
+function normalizeDecision(r: unknown): "allow" | "deny" {
+  return r === "once" || r === "always" ? "allow" : "deny";
 }
 
 export const NekoPlugin = async ({ $ }: any) => {
@@ -28,7 +33,17 @@ export const NekoPlugin = async ({ $ }: any) => {
     p.sessionID ?? info.sessionID ?? info.id ?? null;
   return {
     event: async ({ event }: any) => {
-      const allow = ["session.created", "session.status", "session.idle", "permission.asked"];
+      const allow = [
+        "session.created",
+        "session.status",
+        "session.idle",
+        "session.error",
+        "session.diff",
+        "permission.asked",
+        "permission.replied",
+        "file.edited",
+        "todo.updated",
+      ];
       if (!allow.includes(event.type)) return;
       const p = event.properties ?? {};
       const info = p.info ?? {};
@@ -40,12 +55,31 @@ export const NekoPlugin = async ({ $ }: any) => {
         await send("session.status", sessionId, { status: normalizeStatus(p.status?.type) });
       } else if (event.type === "session.idle") {
         await send("session.status", sessionId, { status: "completed" });
-      } else {
+      } else if (event.type === "session.error") {
+        await send("session.error", sessionId, {
+          message: String(p.error ?? p.message ?? "unknown error"),
+        });
+      } else if (event.type === "session.diff") {
+        const files = Array.isArray(p.files) ? p.files.map(String) : [];
+        await send("session.diff", sessionId, { files });
+      } else if (event.type === "permission.asked") {
         const patterns = Array.isArray(p.patterns) ? p.patterns.join(",") : undefined;
         await send("permission.requested", sessionId, {
           action: String(p.permission ?? "unknown"),
           ...(patterns ? { resource: patterns } : {}),
         });
+      } else if (event.type === "permission.replied") {
+        const action = p.permission != null ? String(p.permission) : undefined;
+        await send("permission.resolved", sessionId, {
+          ...(action ? { action } : {}),
+          decision: normalizeDecision(p.response ?? p.reply),
+        });
+      } else if (event.type === "file.edited") {
+        await send("file.edited", sessionId, {
+          path: String(p.file ?? p.metadata?.filepath ?? p.path ?? "unknown"),
+        });
+      } else {
+        await send("todo.updated", sessionId, {});
       }
     },
     "tool.execute.before": async (input: any, output: any) => {
@@ -54,6 +88,11 @@ export const NekoPlugin = async ({ $ }: any) => {
       await send("tool.started", (input as any)?.sessionID ?? null, {
         tool: String((input as any)?.tool ?? "unknown"),
         ...(ref ? { ref: String(ref) } : {}),
+      });
+    },
+    "tool.execute.after": async (input: any) => {
+      await send("tool.completed", (input as any)?.sessionID ?? null, {
+        tool: String((input as any)?.tool ?? "unknown"),
       });
     },
   };

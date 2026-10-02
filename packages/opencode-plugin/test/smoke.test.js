@@ -6,6 +6,7 @@ test("plugin exposes event + tool hooks without running shell", async () => {
   const hooks = await NekoPlugin({});
   assert.equal(typeof hooks.event, "function");
   assert.equal(typeof hooks["tool.execute.before"], "function");
+  assert.equal(typeof hooks["tool.execute.after"], "function");
 });
 
 // Fake `$` template tag: captures the printf payload instead of shelling out.
@@ -66,4 +67,26 @@ test("tool hook emits tool.started envelope", async () => {
   assert.equal(m.type, "tool.started");
   assert.equal(m.sessionId, "ses_3");
   assert.deepEqual(m.payload, { tool: "bash", ref: "npm install" });
+});
+
+test("event hook adapts error, diff, replied, file, todo", async () => {
+  const captured = [];
+  const hooks = await NekoPlugin(fakeCtx(captured));
+  const fire = (type, properties) => hooks.event({ event: { type, properties } });
+  await fire("session.error", { sessionID: "s", error: "boom" });
+  assert.deepEqual(lastEnvelope(captured).payload, { message: "boom" });
+  await fire("session.diff", { sessionID: "s", files: ["a.ts"] });
+  assert.deepEqual(lastEnvelope(captured).payload, { files: ["a.ts"] });
+  await fire("permission.replied", { sessionID: "s", permission: "bash", response: "reject" });
+  const r = lastEnvelope(captured);
+  assert.equal(r.type, "permission.resolved");
+  assert.deepEqual(r.payload, { action: "bash", decision: "deny" });
+  await fire("file.edited", { sessionID: "s", file: "src/a.ts" });
+  assert.deepEqual(lastEnvelope(captured).payload, { path: "src/a.ts" });
+  await fire("todo.updated", { sessionID: "s" });
+  assert.equal(lastEnvelope(captured).type, "todo.updated");
+  await hooks["tool.execute.after"]({ sessionID: "s", tool: "bash" });
+  const t = lastEnvelope(captured);
+  assert.equal(t.type, "tool.completed");
+  assert.deepEqual(t.payload, { tool: "bash" });
 });

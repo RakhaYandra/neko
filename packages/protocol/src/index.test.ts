@@ -32,6 +32,21 @@ describe("protocol", () => {
     );
     expect(m.type).toBe("permission.requested");
   });
+  it("accepts the remaining Phase 2 types", () => {
+    const cases: Array<[string, unknown]> = [
+      ["session.completed", {}],
+      ["session.error", { message: "boom" }],
+      ["session.diff", { files: ["a.ts"] }],
+      ["tool.completed", { tool: "bash" }],
+      ["permission.resolved", { action: "bash", decision: "allow" }],
+      ["file.edited", { path: "src/a.ts" }],
+      ["todo.updated", {}],
+    ];
+    for (const [type, payload] of cases) {
+      const m = parseMessage(JSON.stringify({ v: 1, type, at: 1, sessionId: "s", payload }));
+      expect(m.type).toBe(type);
+    }
+  });
   it("rejects wrong version", () => {
     expect(() =>
       parseMessage(JSON.stringify({ v: 99, type: "session.status", at: 1, payload: {} })),

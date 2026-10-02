@@ -37,11 +37,56 @@ export const toolStarted = base.extend({
   }),
 });
 
+export const sessionCompleted = base.extend({
+  type: z.literal("session.completed"),
+  payload: z.object({}),
+});
+
+export const sessionError = base.extend({
+  type: z.literal("session.error"),
+  payload: z.object({ message: z.string() }),
+});
+
+export const sessionDiff = base.extend({
+  type: z.literal("session.diff"),
+  payload: z.object({ files: z.array(z.string()) }),
+});
+
+export const toolCompleted = base.extend({
+  type: z.literal("tool.completed"),
+  payload: z.object({ tool: z.string() }),
+});
+
+export const permissionResolved = base.extend({
+  type: z.literal("permission.resolved"),
+  payload: z.object({
+    action: z.string().optional(),
+    decision: z.enum(["allow", "deny"]),
+  }),
+});
+
+export const fileEdited = base.extend({
+  type: z.literal("file.edited"),
+  payload: z.object({ path: z.string() }),
+});
+
+export const todoUpdated = base.extend({
+  type: z.literal("todo.updated"),
+  payload: z.object({}),
+});
+
 export const nekoMessage = z.discriminatedUnion("type", [
   sessionCreated,
   sessionStatus,
   permissionRequested,
   toolStarted,
+  sessionCompleted,
+  sessionError,
+  sessionDiff,
+  toolCompleted,
+  permissionResolved,
+  fileEdited,
+  todoUpdated,
 ]);
 
 export type NekoMessage = z.infer<typeof nekoMessage>;
