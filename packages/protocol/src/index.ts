@@ -6,7 +6,7 @@ const base = z.object({
   v: z.literal(PROTOCOL_VERSION),
   type: z.string(),
   at: z.number(),
-  sessionId: z.string().optional(),
+  sessionId: z.string().nullish(),
 });
 
 export const sessionCreated = base.extend({
@@ -29,10 +29,19 @@ export const permissionRequested = base.extend({
   }),
 });
 
+export const toolStarted = base.extend({
+  type: z.literal("tool.started"),
+  payload: z.object({
+    tool: z.string(),
+    ref: z.string().optional(),
+  }),
+});
+
 export const nekoMessage = z.discriminatedUnion("type", [
   sessionCreated,
   sessionStatus,
   permissionRequested,
+  toolStarted,
 ]);
 
 export type NekoMessage = z.infer<typeof nekoMessage>;

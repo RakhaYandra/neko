@@ -10,6 +10,8 @@ pub fn socket_path() -> String {
 pub const PROTOCOL_VERSION: u8 = 1;
 
 /// Validate one raw line: returns the message `type` on success.
+/// Checks the ADR-003 envelope (`v`, `type`, `at`); full payload schemas
+/// live in `@neko/protocol` (Zod) and are enforced there.
 /// Never logs payload contents (may contain paths/commands).
 /// Wired to the socket loop in Phase 2.
 #[allow(dead_code)]
@@ -18,10 +20,15 @@ pub fn validate_line(line: &str) -> Result<String, String> {
     if v.get("v") != Some(&serde_json::json!(PROTOCOL_VERSION)) {
         return Err(format!("bad version: {:?}", v.get("v")));
     }
-    v.get("type")
+    let t = v
+        .get("type")
         .and_then(|t| t.as_str())
-        .map(|s| s.to_string())
-        .ok_or_else(|| "missing type".to_string())
+        .filter(|t| !t.is_empty())
+        .ok_or_else(|| "missing type".to_string())?;
+    if !v.get("at").is_some_and(|a| a.is_number()) {
+        return Err("missing at".to_string());
+    }
+    Ok(t.to_string())
 }
 
 #[cfg(test)]
@@ -36,8 +43,14 @@ mod tests {
 
     #[test]
     fn rejects_bad_version_and_garbage() {
-        assert!(validate_line(r#"{"v":99,"type":"x"}"#).is_err());
+        assert!(validate_line(r#"{"v":99,"type":"x","at":1}"#).is_err());
         assert!(validate_line("not-json{{{").is_err());
         assert!(validate_line(r#"{"v":1}"#).is_err());
+    }
+
+    #[test]
+    fn rejects_missing_at_and_empty_type() {
+        assert!(validate_line(r#"{"v":1,"type":"session.status"}"#).is_err());
+        assert!(validate_line(r#"{"v":1,"type":"","at":1}"#).is_err());
     }
 }
