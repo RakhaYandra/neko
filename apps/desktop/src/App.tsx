@@ -97,6 +97,9 @@ export default function App() {
   return (
     <MotionConfig reducedMotion={animations ? "user" : "never"}>
       <main
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setExpanded(false);
+        }}
         style={{
           fontFamily: "sans-serif",
           padding: 14,
@@ -121,6 +124,7 @@ export default function App() {
             pending={activePending}
             project={active.project}
             onDone={() => setExpanded(false)}
+            onCancel={() => setExpanded(false)}
           />
         )}
         {expanded && !activePending && waitingNoKey && <WaitingNotice />}

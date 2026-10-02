@@ -6,9 +6,12 @@ pub mod tray;
 use sessions::manager::SessionManager;
 use sessions::permissions::{self, ReplyDecision};
 use std::sync::Arc;
-use tauri::{Emitter, Listener, Manager, State};
+use tauri::{Emitter, Listener, Manager};
 
 type SharedManager = Arc<tokio::sync::Mutex<SessionManager>>;
+
+/// Returned when the session engine never came up (e.g. unreadable DB).
+const ENGINE_DOWN: &str = "engine unavailable: session storage failed to start";
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -22,10 +25,11 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 async fn reply_permission(
     app: tauri::AppHandle,
-    manager: State<'_, SharedManager>,
     request_id: String,
     reply: String,
 ) -> Result<(), String> {
+    // Storage may have failed at startup; answer clearly instead of panicking.
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
     let decision = ReplyDecision::parse(&reply).ok_or_else(|| "invalid reply".to_string())?;
     let base =
         permissions::serve_url().ok_or_else(|| permissions::ReplyError::NoServeUrl.to_string())?;
@@ -40,9 +44,12 @@ async fn reply_permission(
     match permissions::reply(&http, &base, &p.request_id, decision).await {
         Ok(()) => {
             tracing::info!(request = %p.request_id, reply, "permission replied");
-            let mut m = manager.lock().await;
-            m.resolve_local(&p.session_id).await;
-            let _ = app.emit("neko-event", m.snapshot().to_string());
+            let snapshot = {
+                let mut m = manager.lock().await;
+                m.resolve_local(&p.session_id).await;
+                m.snapshot().to_string()
+            };
+            let _ = app.emit("neko-event", snapshot);
             Ok(())
         }
         Err(e) => {
@@ -56,19 +63,15 @@ async fn reply_permission(
 }
 
 #[tauri::command]
-async fn get_setting(
-    manager: State<'_, SharedManager>,
-    key: String,
-) -> Result<Option<String>, String> {
-    Ok(manager.lock().await.setting_get(&key).await)
+async fn get_setting(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
+    let value = manager.lock().await.setting_get(&key).await;
+    Ok(value)
 }
 
 #[tauri::command]
-async fn set_setting(
-    manager: State<'_, SharedManager>,
-    key: String,
-    value: String,
-) -> Result<(), String> {
+async fn set_setting(app: tauri::AppHandle, key: String, value: String) -> Result<(), String> {
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
     manager.lock().await.setting_set(&key, &value).await;
     Ok(())
 }
@@ -161,17 +164,13 @@ async fn rebuild_tray(manager: &SharedManager, app: &tauri::AppHandle) {
 }
 
 /// Native notification for the three important events (master §18).
-async fn maybe_notify(
-    manager: &SharedManager,
+/// Sync + caller-checked: never takes the manager lock.
+fn maybe_notify(
     app: &tauri::AppHandle,
     neko_type: &str,
     payload: &serde_json::Value,
     project: Option<String>,
 ) {
-    let m = manager.lock().await;
-    if m.setting_get("notifications").await.as_deref() == Some("0") {
-        return;
-    }
     let project = project.unwrap_or_else(|| "OpenCode".to_string());
     match neko_type {
         "permission.requested" => {
@@ -287,13 +286,21 @@ pub fn run() {
                         .get("payload")
                         .cloned()
                         .unwrap_or(serde_json::json!({}));
-                    let mut m = manager.lock().await;
-                    let changed = m.apply(&t, sid, &payload).await;
+                    // One lock for the whole cycle: the tokio Mutex is not
+                    // reentrant, so notify/tray must be fed from here.
+                    let (changed, snapshot, notif_on) = {
+                        let mut m = manager.lock().await;
+                        let changed = m.apply(&t, sid, &payload).await;
+                        let notif_on = m.setting_get("notifications").await.as_deref() != Some("0");
+                        (changed, m.snapshot().to_string(), notif_on)
+                    };
                     let project = changed
                         .as_ref()
                         .and_then(|s| s.project_name.clone().or_else(|| s.project_path.clone()));
-                    maybe_notify(&manager, &handle, &t, &payload, project).await;
-                    let _ = handle.emit("neko-event", m.snapshot().to_string());
+                    if notif_on {
+                        maybe_notify(&handle, &t, &payload, project);
+                    }
+                    let _ = handle.emit("neko-event", snapshot);
                     rebuild_tray(&manager, &handle).await;
                 }
             });
@@ -305,6 +312,24 @@ pub fn run() {
                     if let Err(e) = place_top_center(&manage_handle) {
                         tracing::warn!(error = %e, "initial placement failed");
                     }
+                    // Stale sweeper: sessions idle >30min go disconnected.
+                    let sweep_manager = manager.clone();
+                    let sweep_handle = manage_handle.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let mut tick = tokio::time::interval(std::time::Duration::from_secs(60));
+                        loop {
+                            tick.tick().await;
+                            let (n, snapshot) = {
+                                let mut m = sweep_manager.lock().await;
+                                let n = m.sweep_stale(30 * 60 * 1000).await;
+                                (n, m.snapshot().to_string())
+                            };
+                            if n > 0 {
+                                let _ = sweep_handle.emit("neko-event", snapshot);
+                                rebuild_tray(&sweep_manager, &sweep_handle).await;
+                            }
+                        }
+                    });
                     // Tray toggle events from Rust side.
                     let toggle_manager = manager.clone();
                     let toggle_handle = manage_handle.clone();

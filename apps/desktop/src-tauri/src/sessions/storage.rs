@@ -19,12 +19,16 @@ pub fn db_path() -> String {
 }
 
 /// Open (creating) the pool and ensure the schema exists.
+/// WAL + busy timeout keep single-process concurrency boring.
 pub async fn open() -> Result<SqlitePool, sqlx::Error> {
     let path = db_path();
     if let Some(parent) = std::path::Path::new(&path).parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    let opts = SqliteConnectOptions::from_str(&format!("sqlite:{path}"))?.create_if_missing(true);
+    let opts = SqliteConnectOptions::from_str(&format!("sqlite:{path}"))?
+        .create_if_missing(true)
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+        .busy_timeout(std::time::Duration::from_secs(5));
     let pool = SqlitePool::connect_with(opts).await?;
     init_schema(&pool).await?;
     Ok(pool)
@@ -84,6 +88,33 @@ pub async fn prune_events(pool: &SqlitePool, days: i64) -> Result<u64, sqlx::Err
         .execute(pool)
         .await?;
     Ok(r.rows_affected())
+}
+
+/// Delete terminal sessions (completed/error/disconnected) older than `days`
+/// plus their events. Returns (sessions, events) removed.
+pub async fn prune_terminal(pool: &SqlitePool, days: i64) -> Result<(u64, u64), sqlx::Error> {
+    let cutoff = now_ms() - days * 86_400_000;
+    let ev = sqlx::query(
+        "DELETE FROM session_events WHERE session_id IN
+         (SELECT id FROM sessions WHERE status IN ('completed', 'error', 'disconnected')
+          AND last_activity_at < ?)",
+    )
+    .bind(cutoff)
+    .execute(pool)
+    .await?
+    .rows_affected();
+    let se = sqlx::query(
+        "DELETE FROM sessions WHERE status IN ('completed', 'error', 'disconnected')
+         AND last_activity_at < ?",
+    )
+    .bind(cutoff)
+    .execute(pool)
+    .await?
+    .rows_affected();
+    if se > 0 {
+        let _ = sqlx::query("VACUUM").execute(pool).await;
+    }
+    Ok((se, ev))
 }
 
 /// Mark every non-terminal session disconnected (startup recovery).

@@ -116,6 +116,49 @@ fn trim_err(s: String) -> String {
     s
 }
 
+/// Rehydrate pending requests after a restart (Phase 7). Best-effort:
+/// any failure yields an empty list, never an error.
+pub async fn list_pending(client: &reqwest::Client, base_url: &str) -> Vec<PendingPermission> {
+    let url = format!("{}/permission", base_url.trim_end_matches('/'));
+    let res = match client.get(&url).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::debug!(error = %trim_err(e.to_string()), "pending rehydrate skipped");
+            return Vec::new();
+        }
+    };
+    if !res.status().is_success() {
+        return Vec::new();
+    }
+    let items: Vec<serde_json::Value> = res.json().await.unwrap_or_default();
+    let now = super::storage::now_ms();
+    items
+        .iter()
+        .filter_map(|v| {
+            Some(PendingPermission {
+                request_id: v.get("id")?.as_str()?.to_string(),
+                session_id: v.get("sessionID")?.as_str()?.to_string(),
+                action: v
+                    .get("permission")
+                    .and_then(|a| a.as_str())
+                    .unwrap_or("unknown")
+                    .to_string(),
+                resource: v
+                    .get("patterns")
+                    .and_then(|p| p.as_array())
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|x| x.as_str())
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    })
+                    .filter(|s| !s.is_empty()),
+                asked_at_ms: now,
+            })
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

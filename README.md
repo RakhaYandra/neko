@@ -7,7 +7,7 @@ working, waiting-permission, completed, error — without opening the terminal.
 
 ## Status
 
-Phase 6 — Linux integration (tray, notifications, autostart, shortcut, settings, AppImage/.deb).
+Phase 7 — reliability: crash recovery, rehydrate, sweeper, fuzz, keyboard. See `docs/RELIABILITY.md`.
 
 ## Layout
 

@@ -14,21 +14,75 @@ pub struct SessionManager {
 }
 
 impl SessionManager {
-    /// Load from DB, recover stale sessions, prune old events.
+    /// Load from DB, recover stale sessions, prune old data, rehydrate
+    /// pending permissions from serve (best-effort, silent when offline).
     pub async fn load(pool: SqlitePool) -> Result<Self, sqlx::Error> {
         storage::mark_all_disconnected(&pool).await?;
         let pruned = storage::prune_events(&pool, 30).await?;
-        tracing::info!(pruned, "session events pruned");
+        let (old_sessions, old_events) = storage::prune_terminal(&pool, 90).await?;
+        tracing::info!(pruned, old_sessions, old_events, "storage pruned");
         let sessions = storage::load_sessions(&pool)
             .await?
             .into_iter()
             .map(|s| (s.id.clone(), s))
             .collect();
-        Ok(Self {
+        let mut mgr = Self {
             pool,
             sessions,
             pending: HashMap::new(),
-        })
+        };
+        mgr.rehydrate_pending().await;
+        Ok(mgr)
+    }
+
+    /// Pull live pending requests so a restart doesn't orphan them.
+    /// No serve URL configured (TUI-only) is a silent no-op.
+    pub async fn rehydrate_pending(&mut self) {
+        let Some(base) = super::permissions::serve_url() else {
+            return;
+        };
+        self.rehydrate_from(&base).await;
+    }
+
+    /// Testable core of `rehydrate_pending` with an explicit serve base.
+    pub async fn rehydrate_from(&mut self, base: &str) {
+        let client = super::permissions::http_client();
+        for p in super::permissions::list_pending(&client, base).await {
+            // Adopt the session if unknown; transitions stay machine-owned.
+            let now = storage::now_ms();
+            if self.ensure(&p.session_id, now).await.is_some() {
+                let sid = p.session_id.clone();
+                self.set_status(&sid, SessionStatus::WaitingPermission, now, None)
+                    .await;
+                self.pending.insert(p.request_id.clone(), p);
+                tracing::info!(session = %sid, "pending rehydrated");
+            }
+        }
+    }
+
+    /// Periodic sweeper: non-terminal sessions idle longer than
+    /// `stale_after_ms` go disconnected. Returns count changed.
+    pub async fn sweep_stale(&mut self, stale_after_ms: i64) -> usize {
+        let now = storage::now_ms();
+        let stale: Vec<String> = self
+            .sessions
+            .values()
+            .filter(|s| {
+                !matches!(
+                    s.status,
+                    SessionStatus::Disconnected | SessionStatus::Completed | SessionStatus::Error
+                ) && now - s.last_activity_at > stale_after_ms
+            })
+            .map(|s| s.id.clone())
+            .collect();
+        for sid in &stale {
+            self.set_status(sid, SessionStatus::Disconnected, now, None)
+                .await;
+        }
+        if !stale.is_empty() {
+            tracing::info!(count = stale.len(), "stale sessions swept");
+        }
+        stale.len()
     }
 
     /// Apply one validated Neko event. Returns the changed session, if any.
@@ -299,6 +353,25 @@ fn event_kind(neko_type: &str, payload: &serde_json::Value) -> Option<EventKind>
     }
 }
 
+/// Unknown Neko types are inert: no session created, no state touched.
+#[test]
+fn unknown_types_are_inert() {
+    for hostile in [
+        "__proto__",
+        "constructor",
+        "../../etc/passwd",
+        "session.status ",
+        "SESSION.STATUS",
+    ] {
+        assert!(event_kind(hostile, &serde_json::json!({"status": "working"})).is_none());
+    }
+    // Only the real allow-list reaches the state machine.
+    assert_eq!(
+        event_kind("session.status", &serde_json::json!({"status": "working"})),
+        Some(EventKind::Status(SessionStatus::Working))
+    );
+}
+
 fn project_of(neko_type: &str, payload: &serde_json::Value) -> Option<String> {
     (neko_type == "session.created")
         .then(|| payload.get("project")?.as_str().map(str::to_string))
@@ -431,5 +504,95 @@ mod tests {
             .unwrap()
             .is_empty());
         assert_eq!(m.sessions.get("a").unwrap().status, SessionStatus::Working);
+    }
+
+    #[tokio::test]
+    async fn sweep_disconnects_only_stale_active() {
+        let mut m = mem_manager().await;
+        m.apply("session.created", Some("a"), &serde_json::json!({}))
+            .await;
+        m.apply("session.status", Some("a"), &payload_status("working"))
+            .await;
+        m.apply("session.created", Some("b"), &serde_json::json!({}))
+            .await;
+        m.apply("session.completed", Some("b"), &serde_json::json!({}))
+            .await;
+        // Threshold -1: always stale regardless of same-millisecond updates.
+        assert_eq!(m.sweep_stale(-1).await, 1);
+        assert_eq!(
+            m.sessions.get("a").unwrap().status,
+            SessionStatus::Disconnected
+        );
+        assert_eq!(
+            m.sessions.get("b").unwrap().status,
+            SessionStatus::Completed
+        );
+        // Second sweep finds nothing.
+        assert_eq!(m.sweep_stale(0).await, 0);
+    }
+
+    /// Regression (Phase 7): the event loop must be able to apply events
+    /// back-to-back. A re-entrant lock used to stall the stream after the
+    /// first event, so a whole burst must land in one guard.
+    #[tokio::test]
+    async fn burst_of_events_applies_without_stall() {
+        let mut m = mem_manager().await;
+        for i in 0..25 {
+            let sid = format!("ses_{i}");
+            m.apply("session.created", Some(&sid), &serde_json::json!({}))
+                .await;
+            m.apply("session.status", Some(&sid), &payload_status("working"))
+                .await;
+            m.apply(
+                "tool.started",
+                Some(&sid),
+                &serde_json::json!({"tool":"bash"}),
+            )
+            .await;
+            m.apply(
+                "tool.completed",
+                Some(&sid),
+                &serde_json::json!({"tool":"bash"}),
+            )
+            .await;
+        }
+        let snap = m.snapshot();
+        let sessions = snap.get("sessions").unwrap().as_array().unwrap();
+        assert_eq!(sessions.len(), 25);
+        assert!(sessions
+            .iter()
+            .all(|s| s.get("status").unwrap() == "working"));
+        // 25 sessions x 4 events recorded.
+        let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM session_events")
+            .fetch_one(&m.pool)
+            .await
+            .unwrap();
+        assert_eq!(rows, 100);
+    }
+
+    #[tokio::test]
+    async fn rehydrate_adopts_live_pending() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut s, _) = listener.accept().await.unwrap();
+            let mut buf = [0u8; 4096];
+            let _ = s.read(&mut buf).await;
+            let body = br#"[{"id":"per_9","sessionID":"ghost","permission":"bash","patterns":["make build"]}]"#;
+            let head = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            s.write_all(head.as_bytes()).await.unwrap();
+            s.write_all(body).await.unwrap();
+        });
+        let mut m = mem_manager().await;
+        m.rehydrate_from(&format!("http://{addr}")).await;
+        assert_eq!(
+            m.sessions.get("ghost").unwrap().status,
+            SessionStatus::WaitingPermission
+        );
+        assert!(m.take_pending("per_9").is_some());
     }
 }

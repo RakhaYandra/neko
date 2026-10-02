@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { PendingRequest } from "../../stores/sessions";
 
@@ -6,10 +6,11 @@ const STALE_MS = 5 * 60 * 1000;
 
 type Reply = "once" | "always" | "deny";
 
+// Tab order: Allow → Always → Deny. Deny last so it is not the default.
 const BUTTONS: Array<{ reply: Reply; label: string; primary?: boolean }> = [
-  { reply: "deny", label: "Deny" },
   { reply: "once", label: "Allow", primary: true },
   { reply: "always", label: "Always" },
+  { reply: "deny", label: "Deny" },
 ];
 
 function age(askedAt: number): string {
@@ -21,14 +22,22 @@ export function PermissionBubble({
   pending,
   project,
   onDone,
+  onCancel,
 }: {
   pending: PendingRequest;
   project: string;
   onDone: () => void;
+  onCancel: () => void;
 }) {
   const [busy, setBusy] = useState<Reply | null>(null);
   const [error, setError] = useState<string | null>(null);
   const stale = Date.now() - pending.askedAt > STALE_MS;
+  const allowRef = useRef<HTMLButtonElement>(null);
+
+  // Focus Allow so the common answer is one Enter away.
+  useEffect(() => {
+    allowRef.current?.focus();
+  }, [pending.requestId]);
 
   async function answer(reply: Reply) {
     setBusy(reply);
@@ -45,6 +54,11 @@ export function PermissionBubble({
 
   return (
     <div
+      role="group"
+      aria-label="Permission request"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onCancel();
+      }}
       style={{
         marginTop: 10,
         padding: 10,
@@ -91,7 +105,9 @@ export function PermissionBubble({
         {BUTTONS.map((b) => (
           <button
             key={b.reply}
+            ref={b.reply === "once" ? allowRef : undefined}
             disabled={busy !== null}
+            aria-label={`${b.label} permission`}
             onClick={() => void answer(b.reply)}
             style={{
               flex: 1,
