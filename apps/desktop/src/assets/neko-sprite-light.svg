@@ -1,0 +1,662 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" shape-rendering="crispEdges" class="pixel-art" style="background-color: #0d1117; image-rendering: pixelated; image-rendering: crisp-edges;">
+  <defs>
+    <pattern id="grid-pattern" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#21262d" stroke-width="1" stroke-dasharray="2,2"/>
+    </pattern>
+  </defs>
+
+  <!-- Background Canvas Grid -->
+  <rect width="1024" height="1024" fill="#0d1117"/>
+  <rect width="1024" height="1024" fill="url(#grid-pattern)"/>
+
+  <!-- Outer Header Info -->
+  <text x="32" y="38" fill="#f0f6fc" font-family="monospace" font-size="14" font-weight="bold" letter-spacing="1">NEKO LINUX COMPANION — LIGHT THEME SPRITE SHEET (ALL POSES &amp; FRAMES)</text>
+  <text x="32" y="58" fill="#8b949e" font-family="monospace" font-size="11">Palette: Body #23232e | Shadow #6e7681 | Outline #16161e | Accent #ffb224 | Status Dots Preserved</text>
+
+  <!-- ========================================================================= -->
+  <!-- 4x4 MASTER GRID MATRIX (Cell Size: 220x220, Mascot Box: 128x128 at 8x scale) -->
+  <!-- ========================================================================= -->
+
+  <!-- CELL 1: IDLE (Row 0, Col 0: x=32, y=74) -->
+  <g transform="translate(32, 74)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#8b949e"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">01. IDLE (F1 &amp; F2)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1 (x=16, y=44) Scale 4x (64x64) -->
+    <g transform="translate(16, 50) scale(4)">
+      <!-- Shadow -->
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <!-- Outline/Ears -->
+      <rect x="3" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="5" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="5" width="1" height="1" fill="#ffb224"/>
+      <!-- Body & Head -->
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#23232e"/>
+      <!-- Sleeping Eyes horizontal - - -->
+      <rect x="5" y="9" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="9" width="2" height="1" fill="#16161e"/>
+      <!-- Nose/Mouth -->
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Zzz Particle F1 -->
+      <rect x="12" y="2" width="2" height="1" fill="#ffb224"/>
+      <rect x="13" y="3" width="1" height="1" fill="#ffb224"/>
+      <rect x="12" y="4" width="2" height="1" fill="#ffb224"/>
+    </g>
+
+    <!-- Frame 2 (x=116, y=44) Scale 4x (64x64) (Zzz 1px higher) -->
+    <g transform="translate(116, 50) scale(4)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="3" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="5" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="5" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#23232e"/>
+      <rect x="5" y="9" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="9" width="2" height="1" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Zzz Particle F2 (1px higher: y=1..3) -->
+      <rect x="12" y="1" width="2" height="1" fill="#ffb224"/>
+      <rect x="13" y="2" width="1" height="1" fill="#ffb224"/>
+      <rect x="12" y="3" width="2" height="1" fill="#ffb224"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 2: CODING (Row 0, Col 1: x=276, y=74) -->
+  <g transform="translate(276, 74)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">02. CODING (F1 &amp; F2)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1: Paws left up (y=11), right down (y=12) -->
+    <g transform="translate(16, 50) scale(4)">
+      <rect x="2" y="14" width="12" height="1" fill="#6e7681"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <!-- Eyes open -->
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <!-- Terminal keyboard baseline -->
+      <rect x="3" y="13" width="10" height="1" fill="#58a6ff"/>
+      <!-- Paws F1 -->
+      <rect x="4" y="11" width="2" height="2" fill="#ffb224"/>
+      <rect x="10" y="12" width="2" height="2" fill="#ffb224"/>
+    </g>
+
+    <!-- Frame 2: Paws swapped (left down y=12, right up y=11) -->
+    <g transform="translate(116, 50) scale(4)">
+      <rect x="2" y="14" width="12" height="1" fill="#6e7681"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <rect x="3" y="13" width="10" height="1" fill="#58a6ff"/>
+      <!-- Paws F2 SWAPPED -->
+      <rect x="4" y="12" width="2" height="2" fill="#ffb224"/>
+      <rect x="10" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 3: BUSY (Row 0, Col 2: x=520, y=74) -->
+  <g transform="translate(520, 74)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">03. BUSY (F1 &amp; F2)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1: Wrench at x=13 -->
+    <g transform="translate(16, 50) scale(4)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <!-- Squint eyes > < -->
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="6" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="5" y="10" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="9" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="10" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Mini Wrench F1 (x=13) -->
+      <rect x="13" y="3" width="2" height="1" fill="#58a6ff"/>
+      <rect x="14" y="4" width="1" height="3" fill="#58a6ff"/>
+      <rect x="13" y="7" width="2" height="1" fill="#58a6ff"/>
+    </g>
+
+    <!-- Frame 2: Wrench shifted 1px right (x=14) -->
+    <g transform="translate(116, 50) scale(4)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="6" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="5" y="10" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="9" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="10" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Mini Wrench F2 (shifted 1px right: x=14) -->
+      <rect x="14" y="3" width="2" height="1" fill="#58a6ff"/>
+      <rect x="15" y="4" width="1" height="3" fill="#58a6ff"/>
+      <rect x="14" y="7" width="2" height="1" fill="#58a6ff"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 4: PERMISSION (Row 0, Col 3: x=764, y=74) -->
+  <g transform="translate(764, 74)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#d29922"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">04. PERMISSION (!)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">1F+BOUNCE</text>
+
+    <!-- Scaled 5x Center (80x80) -->
+    <g transform="translate(68, 48) scale(5)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <!-- Exclamation Mark ! -->
+      <rect x="7" y="0" width="2" height="3" fill="#d29922"/>
+      <rect x="7" y="4" width="2" height="1" fill="#d29922"/>
+      <!-- Tall Alert Ears -->
+      <rect x="3" y="2" width="3" height="4" fill="#16161e"/>
+      <rect x="10" y="2" width="3" height="4" fill="#16161e"/>
+      <rect x="4" y="3" width="1" height="2" fill="#ffb224"/>
+      <rect x="11" y="3" width="1" height="2" fill="#ffb224"/>
+      <!-- Body -->
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#23232e"/>
+      <!-- Wide Alert Eyes -->
+      <rect x="5" y="8" width="2" height="2" fill="#16161e"/>
+      <rect x="9" y="8" width="2" height="2" fill="#16161e"/>
+      <rect x="5" y="8" width="1" height="1" fill="#f0f6fc"/>
+      <rect x="9" y="8" width="1" height="1" fill="#f0f6fc"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+    </g>
+    <text x="64" y="196" fill="#8b949e" font-family="monospace" font-size="10">sudo / prompt alert</text>
+  </g>
+
+  <!-- CELL 5: COMPLETED (Row 1, Col 0: x=32, y=310) -->
+  <g transform="translate(32, 310)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">05. COMPLETED (♪)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1: Jump at y=4, note at x=12, y=2 -->
+    <g transform="translate(16, 50) scale(4)">
+      <!-- Music Note F1 -->
+      <rect x="12" y="2" width="3" height="1" fill="#3fb950"/>
+      <rect x="12" y="3" width="1" height="2" fill="#3fb950"/>
+      <rect x="14" y="3" width="1" height="2" fill="#3fb950"/>
+      <rect x="11" y="5" width="2" height="1" fill="#3fb950"/>
+      <!-- Shadow on floor -->
+      <rect x="5" y="15" width="6" height="1" fill="#6e7681"/>
+      <!-- Mascot (y=4) -->
+      <rect x="3" y="2" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="2" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="3" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="3" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="4" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="5" width="10" height="7" fill="#23232e"/>
+      <!-- Happy ^ ^ Eyes -->
+      <rect x="5" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <!-- Paws up -->
+      <rect x="2" y="8" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="8" width="2" height="2" fill="#ffb224"/>
+    </g>
+
+    <!-- Frame 2: Jump 1px higher (y=3), note shifted 1px up-right (x=13, y=1) -->
+    <g transform="translate(116, 50) scale(4)">
+      <!-- Music Note F2 (shifted up-right: x=13, y=1) -->
+      <rect x="13" y="1" width="3" height="1" fill="#3fb950"/>
+      <rect x="13" y="2" width="1" height="2" fill="#3fb950"/>
+      <rect x="15" y="2" width="1" height="2" fill="#3fb950"/>
+      <rect x="12" y="4" width="2" height="1" fill="#3fb950"/>
+      <!-- Shadow smaller -->
+      <rect x="6" y="15" width="4" height="1" fill="#6e7681"/>
+      <!-- Mascot 1px higher (y=3 vs y=4) -->
+      <rect x="3" y="1" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="1" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="2" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="2" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="3" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="4" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="6" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="6" width="2" height="1" fill="#16161e"/>
+      <rect x="7" y="8" width="2" height="1" fill="#ffb224"/>
+      <rect x="2" y="7" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="7" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 6: ERROR (Row 1, Col 1: x=276, y=310) -->
+  <g transform="translate(276, 310)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#f85149"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">06. ERROR (X X)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">1 FRAME</text>
+
+    <!-- Scaled 5x Center -->
+    <g transform="translate(68, 50) scale(5)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <!-- Drooping Ears -->
+      <rect x="2" y="5" width="3" height="3" fill="#16161e"/>
+      <rect x="11" y="5" width="3" height="3" fill="#16161e"/>
+      <rect x="3" y="6" width="1" height="1" fill="#ffb224"/>
+      <rect x="12" y="6" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#23232e"/>
+      <!-- Red X X Eyes -->
+      <rect x="4" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="6" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="5" y="9" width="1" height="1" fill="#f85149"/>
+      <rect x="4" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="6" y="10" width="1" height="1" fill="#f85149"/>
+
+      <rect x="9" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="11" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="10" y="9" width="1" height="1" fill="#f85149"/>
+      <rect x="9" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="11" y="10" width="1" height="1" fill="#f85149"/>
+      <!-- Sad mouth -->
+      <rect x="7" y="12" width="2" height="1" fill="#ffb224"/>
+    </g>
+    <text x="64" y="196" fill="#8b949e" font-family="monospace" font-size="10">Exit code non-zero</text>
+  </g>
+
+  <!-- CELL 7: DISCONNECTED (Row 1, Col 2: x=520, y=310) -->
+  <g transform="translate(520, 310)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#8b949e"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">07. DISCONNECTED</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">1 FRAME</text>
+
+    <!-- Scaled 5x Center (Grayscale / severed cable) -->
+    <g transform="translate(68, 50) scale(5)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#6e7681"/>
+      <rect x="11" y="4" width="1" height="1" fill="#6e7681"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <!-- Blank / Dim eyes -->
+      <rect x="5" y="8" width="1" height="1" fill="#6e7681"/>
+      <rect x="10" y="8" width="1" height="1" fill="#6e7681"/>
+      <rect x="7" y="10" width="2" height="1" fill="#6e7681"/>
+      <!-- Severed cable spark -->
+      <rect x="13" y="11" width="2" height="1" fill="#8b949e"/>
+      <rect x="15" y="12" width="1" height="1" fill="#f85149"/>
+    </g>
+    <text x="60" y="196" fill="#8b949e" font-family="monospace" font-size="10">Daemon socket lost</text>
+  </g>
+
+  <!-- CELL 8: THINKING (Row 1, Col 3: x=764, y=310) -->
+  <g transform="translate(764, 310)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">08. THINKING (…)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1: Ellipsis at x=9, 11, 13 -->
+    <g transform="translate(16, 50) scale(4)">
+      <!-- … particle F1 -->
+      <rect x="9" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="11" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="13" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <!-- Looking up eyes -->
+      <rect x="5" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <!-- Paw on chin -->
+      <rect x="9" y="10" width="2" height="2" fill="#ffb224"/>
+    </g>
+
+    <!-- Frame 2: Ellipsis shifted 1px right: x=10, 12, 14 -->
+    <g transform="translate(116, 50) scale(4)">
+      <!-- … particle F2 (1px right) -->
+      <rect x="10" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="12" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="14" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <rect x="9" y="10" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 9: CELEBRATE (Row 2, Col 0: x=32, y=546) - 3 FRAMES -->
+  <g transform="translate(32, 546)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">09. CELEBRATE</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">3 FRAMES</text>
+
+    <!-- F1 (x=10, scale 3.2x) -->
+    <g transform="translate(10, 50) scale(3.2)">
+      <!-- Confetti 1 -->
+      <rect x="1" y="1" width="1" height="1" fill="#ffb224"/>
+      <rect x="14" y="2" width="1" height="1" fill="#3fb950"/>
+      <rect x="3" y="3" width="1" height="1" fill="#58a6ff"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="1" y="3" width="2" height="2" fill="#ffb224"/>
+      <rect x="13" y="3" width="2" height="2" fill="#ffb224"/>
+    </g>
+
+    <!-- F2: Confetti spread further outward -->
+    <g transform="translate(76, 50) scale(3.2)">
+      <rect x="0" y="0" width="1" height="1" fill="#ffb224"/>
+      <rect x="15" y="1" width="1" height="1" fill="#3fb950"/>
+      <rect x="2" y="2" width="1" height="1" fill="#f85149"/>
+      <rect x="13" y="4" width="1" height="1" fill="#58a6ff"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="1" y="3" width="2" height="2" fill="#ffb224"/>
+      <rect x="13" y="3" width="2" height="2" fill="#ffb224"/>
+    </g>
+
+    <!-- F3: Landing, paws slightly lower (y=5), body at y=6 -->
+    <g transform="translate(142, 50) scale(3.2)">
+      <rect x="1" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="14" y="6" width="1" height="1" fill="#3fb950"/>
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#23232e"/>
+      <rect x="5" y="8" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="8" width="2" height="1" fill="#16161e"/>
+      <!-- Paws lower landing -->
+      <rect x="2" y="5" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="5" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="24" y="196" fill="#6e7681" font-family="monospace" font-size="10">F1</text>
+    <text x="92" y="196" fill="#6e7681" font-family="monospace" font-size="10">F2</text>
+    <text x="156" y="196" fill="#6e7681" font-family="monospace" font-size="10">F3 (Landing)</text>
+  </g>
+
+  <!-- CELL 10: RECONNECT (Row 2, Col 1: x=276, y=546) -->
+  <g transform="translate(276, 546)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">10. RECONNECT</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1: Plug at x=14 -->
+    <g transform="translate(16, 50) scale(4)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Socket on body x=11, cable plug at x=14 -->
+      <rect x="11" y="11" width="1" height="2" fill="#58a6ff"/>
+      <rect x="14" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+
+    <!-- Frame 2: Plug 1px closer to socket (x=13) -->
+    <g transform="translate(116, 50) scale(4)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Socket on body x=11, cable plug 1px closer at x=13 -->
+      <rect x="11" y="11" width="1" height="2" fill="#58a6ff"/>
+      <rect x="13" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 11: PEEKING (Row 2, Col 2: x=520, y=546) -->
+  <g transform="translate(520, 546)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#8b949e"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">11. PEEKING</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">1 FRAME</text>
+
+    <!-- Half body peeking behind bottom bezel -->
+    <g transform="translate(68, 50) scale(5)">
+      <!-- Ears & Top of Head -->
+      <rect x="3" y="6" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="6" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="7" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="7" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="8" width="12" height="5" fill="#16161e"/>
+      <rect x="3" y="9" width="10" height="4" fill="#23232e"/>
+      <!-- Peeking Eyes -->
+      <rect x="5" y="10" width="2" height="2" fill="#16161e"/>
+      <rect x="9" y="10" width="2" height="2" fill="#16161e"/>
+      <rect x="5" y="10" width="1" height="1" fill="#ffb224"/>
+      <rect x="9" y="10" width="1" height="1" fill="#ffb224"/>
+      <!-- Bezel line -->
+      <rect x="0" y="13" width="16" height="3" fill="#30363d"/>
+    </g>
+    <text x="56" y="196" fill="#8b949e" font-family="monospace" font-size="10">Bezel / status bar peek</text>
+  </g>
+
+  <!-- CELL 12: DRAGGING (Row 2, Col 3: x=764, y=546) -->
+  <g transform="translate(764, 546)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#d29922"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">12. DRAGGING</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1: Motion lines at x=0 -->
+    <g transform="translate(16, 50) scale(4)">
+      <!-- Motion lines F1 -->
+      <rect x="0" y="7" width="2" height="1" fill="#d29922"/>
+      <rect x="0" y="11" width="3" height="1" fill="#d29922"/>
+      <!-- Slanted / Braced Body -->
+      <rect x="4" y="4" width="11" height="9" fill="#16161e"/>
+      <rect x="5" y="5" width="9" height="7" fill="#23232e"/>
+      <rect x="7" y="7" width="1" height="2" fill="#16161e"/>
+      <rect x="11" y="7" width="1" height="2" fill="#16161e"/>
+      <!-- Clinging Paws -->
+      <rect x="13" y="5" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+
+    <!-- Frame 2: Motion lines shifted 1px left -->
+    <g transform="translate(116, 50) scale(4)">
+      <!-- Motion lines F2 (shifted 1px left / lengthened) -->
+      <rect x="0" y="6" width="3" height="1" fill="#d29922"/>
+      <rect x="0" y="10" width="4" height="1" fill="#d29922"/>
+      <!-- Body -->
+      <rect x="4" y="4" width="11" height="9" fill="#16161e"/>
+      <rect x="5" y="5" width="9" height="7" fill="#23232e"/>
+      <rect x="7" y="7" width="1" height="2" fill="#16161e"/>
+      <rect x="11" y="7" width="1" height="2" fill="#16161e"/>
+      <rect x="13" y="5" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 13: LISTEN (Row 3, Col 0: x=32, y=782) -->
+  <g transform="translate(32, 782)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">13. LISTEN (AUDIO)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2 FRAMES</text>
+
+    <!-- Frame 1: Earwave at x=1 -->
+    <g transform="translate(16, 50) scale(4)">
+      <!-- Earwave F1 -->
+      <rect x="1" y="2" width="1" height="3" fill="#58a6ff"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+    </g>
+
+    <!-- Frame 2: Earwave arcs 1px wider at x=0 -->
+    <g transform="translate(116, 50) scale(4)">
+      <!-- Earwave F2 (wider: x=0) -->
+      <rect x="0" y="1" width="1" height="5" fill="#58a6ff"/>
+      <rect x="2" y="2" width="1" height="3" fill="#58a6ff"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2</text>
+  </g>
+
+  <!-- CELL 14: DENIED (Row 3, Col 1: x=276, y=782) -->
+  <g transform="translate(276, 782)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#f85149"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">14. DENIED (SHAKE)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">2F SHAKE</text>
+
+    <!-- Frame 1 (Shake B: normal center x=2) -->
+    <g transform="translate(16, 50) scale(4)">
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <!-- Squint eyes -->
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <!-- Crossed Paws X -->
+      <rect x="6" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="8" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="7" y="11" width="1" height="1" fill="#f85149"/>
+      <rect x="6" y="12" width="1" height="1" fill="#f85149"/>
+      <rect x="8" y="12" width="1" height="1" fill="#f85149"/>
+    </g>
+
+    <!-- Frame 2 (Shake A: whole sprite shifted 1px left: x=1) -->
+    <g transform="translate(116, 50) scale(4)">
+      <rect x="1" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="2" y="6" width="10" height="7" fill="#23232e"/>
+      <!-- Squint eyes shifted -->
+      <rect x="4" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="9" y="8" width="1" height="1" fill="#16161e"/>
+      <!-- Crossed Paws X shifted -->
+      <rect x="5" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="7" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="6" y="11" width="1" height="1" fill="#f85149"/>
+      <rect x="5" y="12" width="1" height="1" fill="#f85149"/>
+      <rect x="7" y="12" width="1" height="1" fill="#f85149"/>
+    </g>
+    <text x="36" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 1</text>
+    <text x="136" y="196" fill="#6e7681" font-family="monospace" font-size="10">Frame 2 (1px L)</text>
+  </g>
+
+  <!-- CELL 15: ALLOWED (Row 3, Col 2: x=520, y=782) -->
+  <g transform="translate(520, 782)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">15. ALLOWED (✓)</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">1 FRAME</text>
+
+    <!-- Scaled 5x Center -->
+    <g transform="translate(68, 50) scale(5)">
+      <rect x="3" y="14" width="10" height="1" fill="#6e7681"/>
+      <!-- Green Checkmark ✓ -->
+      <rect x="11" y="2" width="1" height="1" fill="#3fb950"/>
+      <rect x="12" y="3" width="1" height="1" fill="#3fb950"/>
+      <rect x="13" y="2" width="1" height="1" fill="#3fb950"/>
+      <rect x="14" y="1" width="1" height="1" fill="#3fb950"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <!-- Wink Eyes -->
+      <rect x="5" y="8" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="8" width="1" height="2" fill="#16161e"/>
+      <!-- Thumbs Up Paw -->
+      <rect x="12" y="9" width="2" height="3" fill="#ffb224"/>
+      <rect x="13" y="8" width="1" height="1" fill="#ffb224"/>
+    </g>
+    <text x="56" y="196" fill="#8b949e" font-family="monospace" font-size="10">Permission granted</text>
+  </g>
+
+  <!-- CELL 16: MULTI-SESSION (Row 3, Col 3: x=764, y=782) -->
+  <g transform="translate(764, 782)">
+    <rect width="216" height="216" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">16. MULTI-SESSION</text>
+    <text x="148" y="24" fill="#8b949e" font-family="monospace" font-size="10">PARALLEL</text>
+
+    <!-- Scaled 5x Center with 2 ghost silhouettes in background -->
+    <g transform="translate(68, 50) scale(5)">
+      <!-- Ghost Sub-daemon 1 (Top Left) -->
+      <rect x="0" y="2" width="6" height="5" fill="#16161e"/>
+      <rect x="1" y="3" width="4" height="3" fill="#6e7681" opacity="0.6"/>
+      <!-- Ghost Sub-daemon 2 (Top Right) -->
+      <rect x="10" y="2" width="6" height="5" fill="#16161e"/>
+      <rect x="11" y="3" width="4" height="3" fill="#6e7681" opacity="0.6"/>
+      <!-- Main Master Mascot Center -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#23232e"/>
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+    </g>
+    <text x="56" y="196" fill="#8b949e" font-family="monospace" font-size="10">Multi-worker daemon</text>
+  </g>
+
+</svg>

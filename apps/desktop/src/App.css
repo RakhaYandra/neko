@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* Neko tokens extracted from Stitch sprite sheets (docs/stitch/).
+   GitHub-dark inspired companion palette. Phase 4 wires these to states. */
+:root {
+  --neko-bg: #0d1117;
+  --neko-surface: #161b22;
+  --neko-border: #30363d;
+  --neko-text: #f0f6fc;
+  --neko-muted: #8b949e;
+  --neko-body: #e8e8f0;
+  --neko-amber: #ffb224;
+  --neko-green: #3fb950;
+  --neko-red: #f85149;
+  --neko-blue: #58a6ff;
+}
+
 /* Crisp pixels for all Neko sprite art (see CODE-STYLE-GUIDE). */
 img.pixelated,
 canvas.pixelated {

@@ -1,0 +1,446 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" shape-rendering="crispEdges">
+  <!-- Crisp Pixel Art Sprite Sheet for Neko -->
+  <defs>
+    <style>
+      .bg { fill: #0d1117; }
+      .grid { stroke: #21262d; stroke-width: 1; fill: none; }
+      .border-box { stroke: #30363d; stroke-width: 2; fill: #161b22; }
+      .title-text { fill: #f0f6fc; font-family: monospace; font-size: 14px; font-weight: bold; }
+      .sub-text { fill: #8b949e; font-family: monospace; font-size: 10px; }
+      
+      /* Dark Theme Colors */
+      .c-dark-body { fill: #e8e8f0; }
+      .c-dark-outline { fill: #16161e; }
+      .c-dark-inner-ear { fill: #ffb224; }
+      .c-dark-eye { fill: #16161e; }
+      .c-dark-accent { fill: #ffb224; }
+      .c-dark-shadow { fill: #c0c0d0; }
+      
+      /* Status dots */
+      .dot-gray { fill: #8b949e; }
+      .dot-green { fill: #3fb950; }
+      .dot-blue { fill: #58a6ff; }
+      .dot-amber { fill: #d29922; }
+      .dot-red { fill: #f85149; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" class="bg"/>
+
+  <!-- Header -->
+  <text x="24" y="32" class="title-text">NEKO — 16x16 PIXEL MASCOT SPRITE ATLAS</text>
+  <text x="24" y="48" class="sub-text">Linux Developer Companion • 16-bit crisp grid • Original Design</text>
+
+  <!-- Grid Cells: 4 rows x 4 cols of 16x16 magnified x6 = 96x96 per card -->
+  <!-- Row 1: Idle, Working, Tool-Running, Waiting-Permission -->
+  <!-- 1. IDLE / SLEEPING -->
+  <g transform="translate(24, 64)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">1. IDLE (– – Zzz)</text>
+    <circle cx="94" cy="14" r="3" class="dot-gray"/>
+    <!-- 16x16 Pixel Cat Magnified 4x: offset x=20, y=28, cell=4px -->
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Outline / Body 16x16 -->
+      <!-- Ears -->
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <!-- Head / Body box -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Sleeping Eyes: "- -" -->
+      <rect x="4" y="8" width="2" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="2" height="1" fill="#16161e"/>
+      <!-- Nose/mouth -->
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <!-- Paws resting -->
+      <rect x="5" y="12" width="2" height="1" fill="#c0c0d0"/>
+      <rect x="9" y="12" width="2" height="1" fill="#c0c0d0"/>
+      <!-- Zzz particle -->
+      <rect x="12" y="1" width="3" height="1" fill="#ffb224"/>
+      <rect x="14" y="2" width="1" height="1" fill="#ffb224"/>
+      <rect x="12" y="3" width="3" height="1" fill="#ffb224"/>
+      <!-- Tail -->
+      <rect x="1" y="10" width="1" height="3" fill="#16161e"/>
+    </g>
+  </g>
+
+  <!-- 2. WORKING / CODING -->
+  <g transform="translate(144, 64)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">2. CODING (Paws)</text>
+    <circle cx="94" cy="14" r="3" class="dot-green"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Ears -->
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <!-- Head / Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Focused Eyes: 2px dots -->
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <!-- Nose -->
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <!-- Mini terminal / keyboard -->
+      <rect x="4" y="13" width="8" height="1" fill="#58a6ff"/>
+      <!-- Paws active (one up, one down) -->
+      <rect x="4" y="11" width="2" height="2" fill="#ffb224"/>
+      <rect x="10" y="12" width="2" height="1" fill="#ffb224"/>
+    </g>
+  </g>
+
+  <!-- 3. TOOL-RUNNING / BUSY -->
+  <g transform="translate(264, 64)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">3. BUSY (&gt; &lt; + Tool)</text>
+    <circle cx="94" cy="14" r="3" class="dot-blue"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Ears -->
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <!-- Head -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Eyes "> <" -->
+      <rect x="4" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="4" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="11" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="11" y="9" width="1" height="1" fill="#16161e"/>
+      <!-- Tiny Wrench beside -->
+      <rect x="13" y="3" width="2" height="1" fill="#58a6ff"/>
+      <rect x="13" y="4" width="1" height="3" fill="#58a6ff"/>
+      <rect x="14" y="5" width="1" height="2" fill="#58a6ff"/>
+    </g>
+  </g>
+
+  <!-- 4. WAITING-PERMISSION -->
+  <g transform="translate(384, 64)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">4. PERMISSION (!)</text>
+    <circle cx="94" cy="14" r="3" class="dot-amber"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- "!" particle above -->
+      <rect x="7" y="0" width="2" height="3" fill="#ffb224"/>
+      <rect x="7" y="4" width="2" height="1" fill="#ffb224"/>
+      <!-- Ears perked high -->
+      <rect x="2" y="3" width="3" height="4" fill="#16161e"/>
+      <rect x="11" y="3" width="3" height="4" fill="#16161e"/>
+      <rect x="3" y="4" width="1" height="2" fill="#ffb224"/>
+      <rect x="12" y="4" width="1" height="2" fill="#ffb224"/>
+      <!-- Body -->
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#e8e8f0"/>
+      <!-- Alert Eyes -->
+      <rect x="4" y="8" width="2" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="2" height="2" fill="#16161e"/>
+      <!-- Cute inquisitive mouth -->
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+    </g>
+  </g>
+
+  <!-- Row 2: Completed, Error, Disconnected, Thinking -->
+  <!-- 5. COMPLETED / HAPPY -->
+  <g transform="translate(24, 176)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">5. COMPLETED (♪)</text>
+    <circle cx="94" cy="14" r="3" class="dot-green"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Music Note "♪" -->
+      <rect x="12" y="0" width="2" height="1" fill="#3fb950"/>
+      <rect x="13" y="1" width="1" height="3" fill="#3fb950"/>
+      <rect x="11" y="3" width="3" height="2" fill="#3fb950"/>
+      <!-- Jump pose: elevated body -->
+      <rect x="3" y="2" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="2" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="3" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="3" width="1" height="1" fill="#ffb224"/>
+      <!-- Body -->
+      <rect x="2" y="4" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="5" width="10" height="6" fill="#e8e8f0"/>
+      <!-- Happy curved eyes ^^ -->
+      <rect x="4" y="6" width="2" height="1" fill="#16161e"/>
+      <rect x="3" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="6" width="2" height="1" fill="#16161e"/>
+      <rect x="12" y="7" width="1" height="1" fill="#16161e"/>
+      <!-- Paws up celebrating -->
+      <rect x="1" y="5" width="2" height="2" fill="#ffb224"/>
+      <rect x="13" y="5" width="2" height="2" fill="#ffb224"/>
+    </g>
+  </g>
+
+  <!-- 6. ERROR / SAD -->
+  <g transform="translate(144, 176)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">6. ERROR (X X)</text>
+    <circle cx="94" cy="14" r="3" class="dot-red"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Drooped Ears -->
+      <rect x="2" y="5" width="3" height="2" fill="#16161e"/>
+      <rect x="11" y="5" width="3" height="2" fill="#16161e"/>
+      <!-- Body -->
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#e8e8f0"/>
+      <!-- "X X" Eyes -->
+      <!-- Left X -->
+      <rect x="4" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="6" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="5" y="9" width="1" height="1" fill="#f85149"/>
+      <rect x="4" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="6" y="10" width="1" height="1" fill="#f85149"/>
+      <!-- Right X -->
+      <rect x="9" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="11" y="8" width="1" height="1" fill="#f85149"/>
+      <rect x="10" y="9" width="1" height="1" fill="#f85149"/>
+      <rect x="9" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="11" y="10" width="1" height="1" fill="#f85149"/>
+      <!-- Sad mouth -->
+      <rect x="7" y="11" width="2" height="1" fill="#16161e"/>
+    </g>
+  </g>
+
+  <!-- 7. DISCONNECTED -->
+  <g transform="translate(264, 176)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">7. DISCONNECTED</text>
+    <circle cx="94" cy="14" r="3" class="dot-gray"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Grayscale Palette -->
+      <!-- Ears -->
+      <rect x="3" y="3" width="3" height="3" fill="#2d333b"/>
+      <rect x="10" y="3" width="3" height="3" fill="#2d333b"/>
+      <rect x="4" y="4" width="1" height="1" fill="#6e7681"/>
+      <rect x="11" y="4" width="1" height="1" fill="#6e7681"/>
+      <!-- Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#2d333b"/>
+      <rect x="3" y="6" width="10" height="7" fill="#8b949e"/>
+      <!-- Blank Eyes -->
+      <rect x="4" y="8" width="2" height="1" fill="#2d333b"/>
+      <rect x="10" y="8" width="2" height="1" fill="#2d333b"/>
+      <!-- Broken Cable Icon -->
+      <rect x="12" y="1" width="2" height="1" fill="#f85149"/>
+      <rect x="11" y="2" width="1" height="1" fill="#f85149"/>
+      <rect x="14" y="3" width="1" height="1" fill="#f85149"/>
+    </g>
+  </g>
+
+  <!-- 8. THINKING -->
+  <g transform="translate(384, 176)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">8. THINKING (…)</text>
+    <circle cx="94" cy="14" r="3" class="dot-blue"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- "..." particle -->
+      <rect x="11" y="1" width="1" height="1" fill="#58a6ff"/>
+      <rect x="13" y="1" width="1" height="1" fill="#58a6ff"/>
+      <rect x="15" y="1" width="1" height="1" fill="#58a6ff"/>
+      <!-- Ears -->
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <!-- Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Looking up eyes -->
+      <rect x="5" y="7" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="7" width="1" height="2" fill="#16161e"/>
+      <!-- Paw on chin -->
+      <rect x="8" y="10" width="2" height="2" fill="#ffb224"/>
+    </g>
+  </g>
+
+  <!-- Row 3: Celebrating, Reconnecting, Peeking, Dragging -->
+  <!-- 9. CELEBRATING -->
+  <g transform="translate(24, 288)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">9. CELEBRATE (Party)</text>
+    <circle cx="94" cy="14" r="3" class="dot-green"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Confetti pixels -->
+      <rect x="1" y="1" width="1" height="1" fill="#ffb224"/>
+      <rect x="14" y="0" width="1" height="1" fill="#3fb950"/>
+      <rect x="7" y="0" width="1" height="1" fill="#f85149"/>
+      <rect x="13" y="3" width="1" height="1" fill="#58a6ff"/>
+      <!-- Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Sparkle Eyes * * -->
+      <rect x="4" y="8" width="2" height="2" fill="#ffb224"/>
+      <rect x="10" y="8" width="2" height="2" fill="#ffb224"/>
+      <!-- Both paws UP -->
+      <rect x="1" y="4" width="2" height="2" fill="#ffb224"/>
+      <rect x="13" y="4" width="2" height="2" fill="#ffb224"/>
+    </g>
+  </g>
+
+  <!-- 10. RECONNECTING -->
+  <g transform="translate(144, 288)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">10. RECONNECT</text>
+    <circle cx="94" cy="14" r="3" class="dot-blue"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Ears -->
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <!-- Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Half-open blink eyes -->
+      <rect x="4" y="8" width="2" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="2" height="1" fill="#16161e"/>
+      <!-- Cable plug connecting into side -->
+      <rect x="12" y="10" width="3" height="2" fill="#58a6ff"/>
+      <rect x="15" y="11" width="1" height="1" fill="#3fb950"/>
+    </g>
+  </g>
+
+  <!-- 11. PEEKING -->
+  <g transform="translate(264, 288)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">11. PEEKING</text>
+    <circle cx="94" cy="14" r="3" class="dot-gray"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Half body peeking from bottom edge -->
+      <rect x="3" y="8" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="8" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="9" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="9" width="1" height="1" fill="#ffb224"/>
+      <!-- Head top -->
+      <rect x="2" y="10" width="12" height="6" fill="#16161e"/>
+      <rect x="3" y="11" width="10" height="5" fill="#e8e8f0"/>
+      <!-- Big curious eyes -->
+      <rect x="4" y="12" width="2" height="2" fill="#16161e"/>
+      <rect x="10" y="12" width="2" height="2" fill="#16161e"/>
+      <!-- Edge line -->
+      <rect x="0" y="15" width="16" height="1" fill="#30363d"/>
+    </g>
+  </g>
+
+  <!-- 12. DRAGGING -->
+  <g transform="translate(384, 288)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">12. DRAGGING</text>
+    <circle cx="94" cy="14" r="3" class="dot-amber"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Motion lines -->
+      <rect x="0" y="7" width="2" height="1" fill="#8b949e"/>
+      <rect x="0" y="10" width="3" height="1" fill="#8b949e"/>
+      <!-- Body tilted slightly right -->
+      <rect x="4" y="4" width="11" height="9" fill="#16161e"/>
+      <rect x="5" y="5" width="9" height="7" fill="#e8e8f0"/>
+      <!-- Ears -->
+      <rect x="5" y="2" width="3" height="3" fill="#16161e"/>
+      <rect x="11" y="2" width="3" height="3" fill="#16161e"/>
+      <!-- Gripping Paws -->
+      <rect x="3" y="11" width="3" height="2" fill="#ffb224"/>
+      <rect x="12" y="11" width="3" height="2" fill="#ffb224"/>
+      <!-- Wide eyes -->
+      <rect x="7" y="7" width="2" height="2" fill="#16161e"/>
+      <rect x="11" y="7" width="2" height="2" fill="#16161e"/>
+    </g>
+  </g>
+
+  <!-- Row 4: Listening, Permission Denied, Permission Allowed, Multi-Session -->
+  <!-- 13. LISTENING -->
+  <g transform="translate(24, 400)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">13. LISTEN (Earwave)</text>
+    <circle cx="94" cy="14" r="3" class="dot-blue"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Soundwave beside tilted ear -->
+      <rect x="1" y="2" width="1" height="3" fill="#58a6ff"/>
+      <rect x="0" y="3" width="1" height="1" fill="#58a6ff"/>
+      <!-- Tilted Ear left -->
+      <rect x="2" y="3" width="4" height="3" fill="#16161e"/>
+      <rect x="3" y="4" width="2" height="1" fill="#58a6ff"/>
+      <!-- Normal Ear right -->
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <!-- Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Attentive Eyes -->
+      <rect x="4" y="8" width="2" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="2" height="2" fill="#16161e"/>
+    </g>
+  </g>
+
+  <!-- 14. PERMISSION DENIED -->
+  <g transform="translate(144, 400)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">14. DENIED (Paws X)</text>
+    <circle cx="94" cy="14" r="3" class="dot-red"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Ears -->
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <!-- Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Firm Eyes -->
+      <rect x="4" y="8" width="2" height="1" fill="#f85149"/>
+      <rect x="10" y="8" width="2" height="1" fill="#f85149"/>
+      <!-- Crossed Paws "X" over chest -->
+      <rect x="6" y="10" width="1" height="1" fill="#ffb224"/>
+      <rect x="9" y="10" width="1" height="1" fill="#ffb224"/>
+      <rect x="7" y="11" width="2" height="1" fill="#ffb224"/>
+      <rect x="6" y="12" width="1" height="1" fill="#ffb224"/>
+      <rect x="9" y="12" width="1" height="1" fill="#ffb224"/>
+    </g>
+  </g>
+
+  <!-- 15. PERMISSION ALLOWED -->
+  <g transform="translate(264, 400)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">15. ALLOWED (✓ Paws)</text>
+    <circle cx="94" cy="14" r="3" class="dot-green"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Floating Checkmark ✓ -->
+      <rect x="12" y="1" width="1" height="1" fill="#3fb950"/>
+      <rect x="13" y="2" width="1" height="1" fill="#3fb950"/>
+      <rect x="14" y="1" width="1" height="1" fill="#3fb950"/>
+      <rect x="15" y="0" width="1" height="1" fill="#3fb950"/>
+      <!-- Body -->
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Friendly Eyes -->
+      <rect x="4" y="8" width="2" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="2" height="1" fill="#16161e"/>
+      <!-- Thumbs up paw -->
+      <rect x="11" y="9" width="2" height="3" fill="#ffb224"/>
+      <rect x="10" y="10" width="1" height="1" fill="#ffb224"/>
+    </g>
+  </g>
+
+  <!-- 16. MULTI-SESSION -->
+  <g transform="translate(384, 400)">
+    <rect width="104" height="100" class="border-box" rx="6"/>
+    <text x="8" y="16" class="sub-text">16. MULTI-SESSION</text>
+    <circle cx="94" cy="14" r="3" class="dot-blue"/>
+    <g transform="translate(20, 24) scale(4)">
+      <!-- Stacked silhouette cat 3 (furthest back) -->
+      <rect x="6" y="1" width="7" height="6" fill="#30363d"/>
+      <rect x="7" y="0" width="2" height="1" fill="#30363d"/>
+      <rect x="11" y="0" width="2" height="1" fill="#30363d"/>
+      <!-- Stacked silhouette cat 2 (middle) -->
+      <rect x="4" y="3" width="8" height="6" fill="#484f58"/>
+      <rect x="5" y="2" width="2" height="1" fill="#484f58"/>
+      <rect x="9" y="2" width="2" height="1" fill="#484f58"/>
+      <!-- Main Foreground Cat 1 -->
+      <rect x="1" y="6" width="11" height="8" fill="#16161e"/>
+      <rect x="2" y="7" width="9" height="6" fill="#e8e8f0"/>
+      <!-- Main Cat Ears -->
+      <rect x="2" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="8" y="4" width="3" height="3" fill="#16161e"/>
+      <!-- Main Cat Eyes -->
+      <rect x="4" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="8" y="9" width="1" height="1" fill="#16161e"/>
+    </g>
+  </g>
+</svg>

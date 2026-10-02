@@ -1,0 +1,411 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" shape-rendering="crispEdges" class="pixel-art" style="background-color: #0d1117; image-rendering: pixelated; image-rendering: crisp-edges;">
+  <defs>
+    <pattern id="dark-grid-pattern" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#21262d" stroke-width="1" stroke-dasharray="2,2"/>
+    </pattern>
+  </defs>
+
+  <!-- Background Canvas Grid -->
+  <rect width="1024" height="1024" fill="#0d1117"/>
+  <rect width="1024" height="1024" fill="url(#dark-grid-pattern)"/>
+
+  <!-- Outer Header Info -->
+  <text x="32" y="38" fill="#f0f6fc" font-family="monospace" font-size="14" font-weight="bold" letter-spacing="1">NEKO LINUX COMPANION — DARK THEME FRAME-2 ANIMATION SUITE</text>
+  <text x="32" y="58" fill="#8b949e" font-family="monospace" font-size="11">Dark Palette: Body #e8e8f0 | Outline #16161e | Shadow #c0c0d0 | Accent #ffb224 | Dedicated New Frame Cards</text>
+
+  <!-- ========================================================================= -->
+  <!-- 10 DEDICATED NEW-FRAME CARDS IN CLEAN GRID (Cell width: 220, height: 210) -->
+  <!-- Row 0: 1. Idle (F2), 2. Coding (F2), 3. Busy (F2), 5. Completed (F2) -->
+  <!-- ========================================================================= -->
+
+  <!-- CARD 1: IDLE (FRAME 2: Zzz 1px higher) -->
+  <g transform="translate(32, 76)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#8b949e"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">01. IDLE (F2)</text>
+    <text x="146" y="24" fill="#ffb224" font-family="monospace" font-size="10">NEW FRAME</text>
+    
+    <!-- Frame 2 Mascot (Scale 5x: 80x80) centered at x=68, y=48 -->
+    <g transform="translate(68, 48) scale(5)">
+      <!-- Ground Shadow -->
+      <rect x="3" y="14" width="10" height="1" fill="#c0c0d0"/>
+      <!-- Ears & Outer Outline -->
+      <rect x="3" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="5" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="5" width="1" height="1" fill="#ffb224"/>
+      <!-- Head / Body -->
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#e8e8f0"/>
+      <!-- Sleeping Eyes horizontal - - -->
+      <rect x="5" y="9" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="9" width="2" height="1" fill="#16161e"/>
+      <!-- Nose/Mouth -->
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Zzz Particle F2 (1px higher: y=1..3) -->
+      <rect x="12" y="1" width="2" height="1" fill="#ffb224"/>
+      <rect x="13" y="2" width="1" height="1" fill="#ffb224"/>
+      <rect x="12" y="3" width="2" height="1" fill="#ffb224"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Zzz shifted 1px higher (y=1)</text>
+  </g>
+
+  <!-- CARD 2: CODING (FRAME 2: Paws swapped) -->
+  <g transform="translate(276, 76)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">02. CODING (F2)</text>
+    <text x="146" y="24" fill="#3fb950" font-family="monospace" font-size="10">PAWS SWAP</text>
+
+    <!-- Frame 2 Mascot (Paws swapped: left down y=12, right up y=11) -->
+    <g transform="translate(68, 48) scale(5)">
+      <rect x="2" y="14" width="12" height="1" fill="#c0c0d0"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Eyes open -->
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <!-- Keyboard bar baseline -->
+      <rect x="3" y="13" width="10" height="1" fill="#58a6ff"/>
+      <!-- Paws F2 SWAPPED (Left down, Right up) -->
+      <rect x="4" y="12" width="2" height="2" fill="#ffb224"/>
+      <rect x="10" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">L paw y=12 / R paw y=11</text>
+  </g>
+
+  <!-- CARD 3: BUSY (FRAME 2: Wrench 1px right) -->
+  <g transform="translate(520, 76)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">03. BUSY (F2)</text>
+    <text x="146" y="24" fill="#58a6ff" font-family="monospace" font-size="10">TOOL +1PX</text>
+
+    <!-- Frame 2 Mascot: Wrench shifted 1px right (x=14) -->
+    <g transform="translate(68, 48) scale(5)">
+      <rect x="3" y="14" width="10" height="1" fill="#c0c0d0"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Squint eyes > < -->
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="6" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="5" y="10" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="9" y="9" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="10" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Mini Wrench F2 (shifted 1px right: x=14) -->
+      <rect x="14" y="3" width="2" height="1" fill="#58a6ff"/>
+      <rect x="15" y="4" width="1" height="3" fill="#58a6ff"/>
+      <rect x="14" y="7" width="2" height="1" fill="#58a6ff"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Wrench ratchet right (x=14)</text>
+  </g>
+
+  <!-- CARD 4: COMPLETED (FRAME 2: Hop 1px higher, Note 1px up-right) -->
+  <g transform="translate(764, 76)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">05. COMPLETED (F2)</text>
+    <text x="146" y="24" fill="#3fb950" font-family="monospace" font-size="10">HOP HIGH</text>
+
+    <!-- Frame 2: Jump 1px higher (y=3 vs y=4), note shifted 1px up-right (x=13, y=1) -->
+    <g transform="translate(68, 48) scale(5)">
+      <!-- Music Note F2 (shifted up-right: x=13, y=1) -->
+      <rect x="13" y="1" width="3" height="1" fill="#3fb950"/>
+      <rect x="13" y="2" width="1" height="2" fill="#3fb950"/>
+      <rect x="15" y="2" width="1" height="2" fill="#3fb950"/>
+      <rect x="12" y="4" width="2" height="1" fill="#3fb950"/>
+      <!-- Floor shadow smaller during apex -->
+      <rect x="6" y="15" width="4" height="1" fill="#c0c0d0"/>
+      <!-- Mascot body 1px higher (y=3 vs y=4) -->
+      <rect x="3" y="1" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="1" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="2" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="2" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="3" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="4" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Happy ^ ^ Eyes -->
+      <rect x="5" y="6" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="6" width="2" height="1" fill="#16161e"/>
+      <rect x="7" y="8" width="2" height="1" fill="#ffb224"/>
+      <!-- Paws up -->
+      <rect x="2" y="7" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="7" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Mascot y=3, Note x=13, y=1</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- Row 1: 8. Thinking (F2), 9. Celebrate (F2 & F3), 10. Reconnecting (F2) -->
+  <!-- ========================================================================= -->
+
+  <!-- CARD 5: THINKING (FRAME 2: Ellipsis 1px right) -->
+  <g transform="translate(32, 304)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">08. THINKING (F2)</text>
+    <text x="146" y="24" fill="#58a6ff" font-family="monospace" font-size="10">PULSE +1PX</text>
+
+    <!-- Frame 2: Ellipsis shifted 1px right: x=10, 12, 14 -->
+    <g transform="translate(68, 48) scale(5)">
+      <!-- … particle F2 (1px right) -->
+      <rect x="10" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="12" y="2" width="1" height="1" fill="#58a6ff"/>
+      <rect x="14" y="2" width="1" height="1" fill="#58a6ff"/>
+      <!-- Shadow -->
+      <rect x="3" y="14" width="10" height="1" fill="#c0c0d0"/>
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Looking up eyes -->
+      <rect x="5" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="7" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="9" width="2" height="1" fill="#ffb224"/>
+      <!-- Paw on chin -->
+      <rect x="9" y="10" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Dots shifted to x=10, 12, 14</text>
+  </g>
+
+  <!-- CARD 6: CELEBRATE (FRAME 2 & FRAME 3 DUAL SUB-CARD) -->
+  <g transform="translate(276, 304)">
+    <rect width="460" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">09. CELEBRATE (NEW FRAMES 2 &amp; 3)</text>
+    <text x="340" y="24" fill="#3fb950" font-family="monospace" font-size="10">BURST + LANDING</text>
+
+    <!-- Sub-frame 2: Confetti repositioned (outer scatter) -->
+    <g transform="translate(42, 48) scale(4.5)">
+      <!-- Confetti outward positions -->
+      <rect x="0" y="0" width="1" height="1" fill="#ffb224"/>
+      <rect x="15" y="1" width="1" height="1" fill="#3fb950"/>
+      <rect x="2" y="2" width="1" height="1" fill="#f85149"/>
+      <rect x="13" y="4" width="1" height="1" fill="#58a6ff"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <rect x="5" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="7" width="2" height="1" fill="#16161e"/>
+      <rect x="1" y="3" width="2" height="2" fill="#ffb224"/>
+      <rect x="13" y="3" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="44" y="186" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">F2: Confetti Repositioned</text>
+
+    <!-- Divider line inside card -->
+    <line x1="230" y1="36" x2="230" y2="198" stroke="#30363d" stroke-width="1" stroke-dasharray="2,2"/>
+
+    <!-- Sub-frame 3: Landing pose (paws slightly lower y=5, body y=6) -->
+    <g transform="translate(266, 48) scale(4.5)">
+      <!-- Descending confetti -->
+      <rect x="1" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="14" y="6" width="1" height="1" fill="#3fb950"/>
+      <!-- Body seated lower -->
+      <rect x="2" y="6" width="12" height="8" fill="#16161e"/>
+      <rect x="3" y="7" width="10" height="6" fill="#e8e8f0"/>
+      <rect x="5" y="8" width="2" height="1" fill="#16161e"/>
+      <rect x="9" y="8" width="2" height="1" fill="#16161e"/>
+      <!-- Paws slightly lower landing (y=5) -->
+      <rect x="2" y="5" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="5" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="268" y="186" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">F3: Landing (Paws Lower)</text>
+  </g>
+
+  <!-- CARD 7: RECONNECTING (FRAME 2: Cable 1px closer) -->
+  <g transform="translate(764, 304)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">10. RECONNECT (F2)</text>
+    <text x="146" y="24" fill="#58a6ff" font-family="monospace" font-size="10">PLUG -1PX</text>
+
+    <!-- Frame 2: Cable plug 1px closer to socket (x=13 vs x=14) -->
+    <g transform="translate(68, 48) scale(5)">
+      <rect x="3" y="14" width="10" height="1" fill="#c0c0d0"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <rect x="5" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+      <!-- Socket at body side x=11, Plug inserted 1px closer at x=13 -->
+      <rect x="11" y="11" width="1" height="2" fill="#58a6ff"/>
+      <rect x="13" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Plug advanced to x=13</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- Row 2: 12. Dragging (F2), 13. Listening (F2), 14. Denied (F2 Shake A) -->
+  <!-- + Summary / Spec Info Card in 4th slot -->
+  <!-- ========================================================================= -->
+
+  <!-- CARD 8: DRAGGING (FRAME 2: Motion lines 1px left) -->
+  <g transform="translate(32, 532)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#d29922"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">12. DRAGGING (F2)</text>
+    <text x="146" y="24" fill="#d29922" font-family="monospace" font-size="10">LINES -1PX</text>
+
+    <!-- Frame 2: Motion lines shifted 1px left / lengthened -->
+    <g transform="translate(68, 48) scale(5)">
+      <!-- Motion streaks shifted 1px left (x=0, length 3 and 4) -->
+      <rect x="0" y="6" width="3" height="1" fill="#d29922"/>
+      <rect x="0" y="10" width="4" height="1" fill="#d29922"/>
+      <!-- Slanted / Dragging Body -->
+      <rect x="4" y="4" width="11" height="9" fill="#16161e"/>
+      <rect x="5" y="5" width="9" height="7" fill="#e8e8f0"/>
+      <rect x="7" y="7" width="1" height="2" fill="#16161e"/>
+      <rect x="11" y="7" width="1" height="2" fill="#16161e"/>
+      <rect x="13" y="5" width="2" height="2" fill="#ffb224"/>
+      <rect x="12" y="11" width="2" height="2" fill="#ffb224"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Motion streaks x=0 (fast drag)</text>
+  </g>
+
+  <!-- CARD 9: LISTENING (FRAME 2: Earwave arcs 1px wider) -->
+  <g transform="translate(276, 532)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#58a6ff"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">13. LISTEN (F2)</text>
+    <text x="146" y="24" fill="#58a6ff" font-family="monospace" font-size="10">WIDER ARC</text>
+
+    <!-- Frame 2: Earwave arcs 1px wider at x=0 (y=1..5) -->
+    <g transform="translate(68, 48) scale(5)">
+      <!-- Earwave F2 (wider outer ripple at x=0) -->
+      <rect x="0" y="1" width="1" height="5" fill="#58a6ff"/>
+      <rect x="2" y="2" width="1" height="3" fill="#58a6ff"/>
+      <!-- Tilted Ear -->
+      <rect x="3" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="10" y="3" width="3" height="3" fill="#16161e"/>
+      <rect x="4" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="11" y="4" width="1" height="1" fill="#ffb224"/>
+      <rect x="2" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="3" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <rect x="5" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="10" y="8" width="1" height="2" fill="#16161e"/>
+      <rect x="7" y="10" width="2" height="1" fill="#ffb224"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Outer acoustic ripple at x=0</text>
+  </g>
+
+  <!-- CARD 10: DENIED (FRAME 2: Whole sprite 1px left — Shake A) -->
+  <g transform="translate(520, 532)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#f85149"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">14. DENIED (F2)</text>
+    <text x="146" y="24" fill="#f85149" font-family="monospace" font-size="10">SHAKE A</text>
+
+    <!-- Frame 2 (Shake A: whole sprite shifted 1px left: x=1 vs x=2) -->
+    <g transform="translate(68, 48) scale(5)">
+      <!-- Whole body x=1 -->
+      <rect x="1" y="5" width="12" height="9" fill="#16161e"/>
+      <rect x="2" y="6" width="10" height="7" fill="#e8e8f0"/>
+      <!-- Drooping Ears shifted -->
+      <rect x="1" y="4" width="3" height="3" fill="#16161e"/>
+      <rect x="9" y="4" width="3" height="3" fill="#16161e"/>
+      <!-- Squint eyes shifted -->
+      <rect x="4" y="8" width="1" height="1" fill="#16161e"/>
+      <rect x="9" y="8" width="1" height="1" fill="#16161e"/>
+      <!-- Crossed Paws X shifted -->
+      <rect x="5" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="7" y="10" width="1" height="1" fill="#f85149"/>
+      <rect x="6" y="11" width="1" height="1" fill="#f85149"/>
+      <rect x="5" y="12" width="1" height="1" fill="#f85149"/>
+      <rect x="7" y="12" width="1" height="1" fill="#f85149"/>
+    </g>
+    <text x="24" y="186" fill="#8b949e" font-family="monospace" font-size="10">Mascot offset 1px Left (Shake)</text>
+  </g>
+
+  <!-- CARD 11: SPECIFICATION & RULES CARD -->
+  <g transform="translate(764, 532)">
+    <rect width="216" height="210" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <circle cx="20" cy="20" r="5" fill="#3fb950"/>
+    <text x="32" y="24" fill="#f0f6fc" font-family="monospace" font-size="11" font-weight="bold">COMPANION SPEC</text>
+    <text x="146" y="24" fill="#8b949e" font-family="monospace" font-size="10">DARKSHEET</text>
+
+    <text x="18" y="56" fill="#ffb224" font-family="monospace" font-size="10" font-weight="bold">PALETTE HARMONY:</text>
+    <text x="18" y="74" fill="#e8e8f0" font-family="monospace" font-size="9.5">• Body: #e8e8f0 (Slate White)</text>
+    <text x="18" y="90" fill="#c0c0d0" font-family="monospace" font-size="9.5">• Shadow: #c0c0d0</text>
+    <text x="18" y="106" fill="#8b949e" font-family="monospace" font-size="9.5">• Outline: #16161e (1px Ink)</text>
+    <text x="18" y="122" fill="#ffb224" font-family="monospace" font-size="9.5">• Accents: #ffb224 (Amber)</text>
+    <text x="18" y="146" fill="#58a6ff" font-family="monospace" font-size="10" font-weight="bold">SINGLE-FRAME POSES:</text>
+    <text x="18" y="164" fill="#8b949e" font-family="monospace" font-size="9">04, 06, 07, 11, 15, 16</text>
+    <text x="18" y="180" fill="#6e7681" font-family="monospace" font-size="8.5">Static by spec (No F2 required)</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER DIAGNOSTIC & COLOR SWATCHES BAR -->
+  <!-- ========================================================================= -->
+  <g transform="translate(32, 760)">
+    <rect width="948" height="232" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="24" y="32" fill="#f0f6fc" font-family="monospace" font-size="12" font-weight="bold">HARDWARE COLOR MATRIX &amp; PIXEL-PERFECT EXPORT MATRIX</text>
+    <text x="24" y="52" fill="#8b949e" font-family="monospace" font-size="10.5">All new animation frames adhere strictly to 16x16 native canvas resolution, viewBox 0 0 16 16, shape-rendering="crispEdges".</text>
+
+    <!-- Color Swatches -->
+    <!-- Swatch 1: Body #e8e8f0 -->
+    <g transform="translate(24, 76)">
+      <rect width="138" height="36" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+      <rect x="8" y="8" width="20" height="20" rx="2" fill="#e8e8f0"/>
+      <text x="36" y="22" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">#e8e8f0</text>
+      <text x="36" y="32" fill="#8b949e" font-family="monospace" font-size="8">Dark Body</text>
+    </g>
+
+    <!-- Swatch 2: Outline #16161e -->
+    <g transform="translate(180, 76)">
+      <rect width="138" height="36" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+      <rect x="8" y="8" width="20" height="20" rx="2" fill="#16161e" stroke="#30363d" stroke-width="1"/>
+      <text x="36" y="22" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">#16161e</text>
+      <text x="36" y="32" fill="#8b949e" font-family="monospace" font-size="8">Ink Outline</text>
+    </g>
+
+    <!-- Swatch 3: Shadow #c0c0d0 -->
+    <g transform="translate(336, 76)">
+      <rect width="138" height="36" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+      <rect x="8" y="8" width="20" height="20" rx="2" fill="#c0c0d0"/>
+      <text x="36" y="22" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">#c0c0d0</text>
+      <text x="36" y="32" fill="#8b949e" font-family="monospace" font-size="8">Mascot Shadow</text>
+    </g>
+
+    <!-- Swatch 4: Accent #ffb224 -->
+    <g transform="translate(492, 76)">
+      <rect width="138" height="36" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+      <rect x="8" y="8" width="20" height="20" rx="2" fill="#ffb224"/>
+      <text x="36" y="22" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">#ffb224</text>
+      <text x="36" y="32" fill="#8b949e" font-family="monospace" font-size="8">Amber Paws/Ears</text>
+    </g>
+
+    <!-- Swatch 5: Accent Blue #58a6ff -->
+    <g transform="translate(648, 76)">
+      <rect width="138" height="36" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+      <rect x="8" y="8" width="20" height="20" rx="2" fill="#58a6ff"/>
+      <text x="36" y="22" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">#58a6ff</text>
+      <text x="36" y="32" fill="#8b949e" font-family="monospace" font-size="8">Tool / Terminal</text>
+    </g>
+
+    <!-- Swatch 6: Success Green #3fb950 -->
+    <g transform="translate(804, 76)">
+      <rect width="124" height="36" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+      <rect x="8" y="8" width="20" height="20" rx="2" fill="#3fb950"/>
+      <text x="36" y="22" fill="#f0f6fc" font-family="monospace" font-size="10" font-weight="bold">#3fb950</text>
+      <text x="36" y="32" fill="#8b949e" font-family="monospace" font-size="8">Music / Check</text>
+    </g>
+
+    <!-- Code integration summary -->
+    <rect x="24" y="130" width="904" height="82" rx="6" fill="#0d1117" stroke="#21262d" stroke-width="1"/>
+    <text x="40" y="154" fill="#3fb950" font-family="monospace" font-size="11">›_ NEKO FRAME-2 RENDER INTEGRATION (DAEMON PIPELINE)</text>
+    <text x="40" y="174" fill="#8b949e" font-family="monospace" font-size="10">neko-daemon --theme=dark --animate-ticks --loop-frames="idle:2,coding:2,busy:2,completed:2,thinking:2,reconnect:2,dragging:2,listen:2,denied:2"</text>
+    <text x="40" y="194" fill="#ffb224" font-family="monospace" font-size="10">neko-daemon --trigger=celebrate --play-once --frames="f1,f2,f3" --on-complete="return_to_previous_state"</text>
+  </g>
+
+</svg>
