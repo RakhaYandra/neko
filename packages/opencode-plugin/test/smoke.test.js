@@ -27,14 +27,14 @@ test("event hook emits ADR-003 envelope for session.created", async () => {
   const captured = [];
   const hooks = await NekoPlugin(fakeCtx(captured));
   await hooks.event({
-    event: { type: "session.created", properties: { info: { id: "ses_1", title: "pulse" } } },
+    event: { type: "session.created", properties: { info: { id: "ses_1", title: "alpha" } } },
   });
   const m = lastEnvelope(captured);
   assert.equal(m.v, 1);
   assert.equal(m.type, "session.created");
   assert.equal(typeof m.at, "number");
   assert.equal(m.sessionId, "ses_1");
-  assert.equal(m.payload.project, "pulse");
+  assert.equal(m.payload.project, "alpha");
 });
 
 test("event hook adapts session.idle and permission.asked to neko types", async () => {

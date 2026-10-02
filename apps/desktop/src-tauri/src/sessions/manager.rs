@@ -393,40 +393,36 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn tracks_three_sessions_like_pulse_lifeos_shiftbase() {
+    async fn tracks_three_sessions_alpha_beta_gamma() {
         let mut m = mem_manager().await;
         m.apply(
             "session.created",
-            Some("pulse"),
-            &serde_json::json!({"project":"pulse"}),
+            Some("alpha"),
+            &serde_json::json!({"project":"alpha"}),
         )
         .await;
-        m.apply("session.status", Some("pulse"), &payload_status("working"))
+        m.apply("session.status", Some("alpha"), &payload_status("working"))
             .await;
         m.apply(
             "tool.started",
-            Some("pulse"),
+            Some("alpha"),
             &serde_json::json!({"tool":"bash"}),
         )
         .await;
         m.apply(
             "session.created",
-            Some("lifeos"),
-            &serde_json::json!({"project":"lifeos"}),
+            Some("beta"),
+            &serde_json::json!({"project":"beta"}),
         )
         .await;
         // Distinct millis so "most recent first" is deterministic.
         tokio::time::sleep(std::time::Duration::from_millis(5)).await;
-        m.apply("session.created", Some("shiftbase"), &serde_json::json!({}))
+        m.apply("session.created", Some("gamma"), &serde_json::json!({}))
             .await;
         // Distinct millis so "most recent first" is deterministic.
         tokio::time::sleep(std::time::Duration::from_millis(5)).await;
-        m.apply(
-            "session.completed",
-            Some("shiftbase"),
-            &serde_json::json!({}),
-        )
-        .await;
+        m.apply("session.completed", Some("gamma"), &serde_json::json!({}))
+            .await;
 
         let snap = m.snapshot();
         let sessions = snap.get("sessions").unwrap().as_array().unwrap();
@@ -438,11 +434,11 @@ mod tests {
                 .unwrap()
                 .clone()
         };
-        assert_eq!(by_id("pulse").get("status").unwrap(), "tool_running");
-        assert_eq!(by_id("lifeos").get("status").unwrap(), "idle");
-        assert_eq!(by_id("shiftbase").get("status").unwrap(), "completed");
-        // Most recent activity first: shiftbase completed last.
-        assert_eq!(sessions[0].get("id").unwrap(), "shiftbase");
+        assert_eq!(by_id("alpha").get("status").unwrap(), "tool_running");
+        assert_eq!(by_id("beta").get("status").unwrap(), "idle");
+        assert_eq!(by_id("gamma").get("status").unwrap(), "completed");
+        // Most recent activity first: gamma completed last.
+        assert_eq!(sessions[0].get("id").unwrap(), "gamma");
     }
 
     #[tokio::test]
