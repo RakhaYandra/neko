@@ -7,7 +7,7 @@ working, waiting-permission, completed, error — without opening the terminal.
 
 ## Status
 
-Phase 2 — OpenCode event bridge. See `docs/API-GUIDE.md`.
+Phase 3 — session engine (state machine + SQLite). See `docs/DATABASE-GUIDE.md`.
 
 ## Layout
 

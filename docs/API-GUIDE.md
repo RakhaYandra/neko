@@ -1,8 +1,13 @@
-# API-GUIDE.md — Neko event bridge (Phase 2)
+# API-GUIDE.md — Neko event bridge (Phase 2) + session engine (Phase 3)
 
 Pipeline: OpenCode hooks → `@neko/opencode-plugin` → Unix socket (NDJSON)
-→ `neko` Rust core → Tauri event `neko-event` → UI. Observe-only: Neko never
-replies to permissions and never blocks the agent (all sends end `|| true`).
+→ `neko` Rust core → session engine → Tauri event `neko-event` → UI.
+Observe-only: Neko never replies to permissions and never blocks the agent
+(all sends end `|| true`).
+
+Since Phase 3, `neko-event` carries `{type:"sessions.snapshot", sessions:[...]}`
+(`{id, project, status, lastActivityAt}`, activity-desc) instead of raw lines;
+the zustand store mirrors it without inferring state. DB: `DATABASE-GUIDE.md`.
 
 ## Transport
 
