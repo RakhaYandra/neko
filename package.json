@@ -1,0 +1,20 @@
+{
+  "name": "neko",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/desktop",
+    "packages/protocol",
+    "packages/opencode-plugin"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace apps/desktop",
+    "build": "npm run build --workspace apps/desktop",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript-eslint": "^8.71.0"
+  }
+}

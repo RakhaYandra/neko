@@ -1,0 +1,15 @@
+{
+  "name": "@neko/opencode-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js",
+    "test": "npm run build --silent && node --test test/",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0"
+  }
+}
