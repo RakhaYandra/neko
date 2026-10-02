@@ -7,7 +7,7 @@ working, waiting-permission, completed, error — without opening the terminal.
 
 ## Status
 
-Phase 3 — session engine (state machine + SQLite). See `docs/DATABASE-GUIDE.md`.
+Phase 4 — companion UI (Stitch sprite poses + session picker).
 
 ## Layout
 
