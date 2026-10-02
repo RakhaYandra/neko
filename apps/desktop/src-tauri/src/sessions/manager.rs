@@ -136,6 +136,23 @@ impl SessionManager {
         v
     }
 
+    /// Count of sessions that need attention (tray badge).
+    pub fn active_count(&self) -> usize {
+        use super::state::SessionStatus as S;
+        self.sessions
+            .values()
+            .filter(|s| matches!(s.status, S::Working | S::ToolRunning | S::WaitingPermission))
+            .count()
+    }
+
+    pub async fn setting_get(&self, key: &str) -> Option<String> {
+        storage::get_setting(&self.pool, key).await.ok().flatten()
+    }
+
+    pub async fn setting_set(&self, key: &str, value: &str) {
+        let _ = storage::set_setting(&self.pool, key, value).await;
+    }
+
     /// Minimal mirror snapshot for the UI. No payloads, no prompts.
     /// Pending requests ride along so the bubble can render exact keys.
     pub fn snapshot(&self) -> serde_json::Value {

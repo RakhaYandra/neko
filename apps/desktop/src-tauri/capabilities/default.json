@@ -6,9 +6,18 @@
   "permissions": [
     "core:default",
     "core:event:allow-listen",
+    "core:event:allow-emit",
     "core:window:allow-set-size",
     "core:window:allow-start-dragging",
     "core:window:allow-set-position",
-    "opener:default"
+    "core:window:allow-primary-monitor",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:app:allow-exit",
+    "opener:default",
+    "notification:default",
+    "autostart:default",
+    "global-shortcut:default"
   ]
 }

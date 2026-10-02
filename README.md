@@ -7,7 +7,7 @@ working, waiting-permission, completed, error — without opening the terminal.
 
 ## Status
 
-Phase 5 — permission control (bubble + serve reply). Needs `opencode serve` and `NEKO_OPENCODE_URL`; see `docs/SECURITY-GUIDE.md`.
+Phase 6 — Linux integration (tray, notifications, autostart, shortcut, settings, AppImage/.deb).
 
 ## Layout
 

@@ -7,6 +7,7 @@ import {
   poseCrop,
 } from "./poses";
 import type { NekoSession } from "../../stores/sessions";
+import { useUi } from "../../stores/ui";
 
 export function Sprite({ status, size = 56 }: { status: string; size?: number }) {
   const { xPct, yPct, scale } = poseCrop(status);
@@ -47,7 +48,8 @@ export function Sprite({ status, size = 56 }: { status: string; size?: number })
 
 export function StatusDot({ status, size = 8 }: { status: string; size?: number }) {
   const color = STATUS_META[status]?.color ?? "#8b949e";
-  const pulse = ATTENTION_PULSE.has(status);
+  const animations = useUi((s) => s.animations);
+  const pulse = animations && ATTENTION_PULSE.has(status);
   return (
     <motion.span
       animate={pulse ? { opacity: [1, 0.35, 1] } : { opacity: 1 }}
@@ -67,7 +69,8 @@ export function StatusDot({ status, size = 8 }: { status: string; size?: number 
 export function Companion({ session }: { session: NekoSession | null }) {
   const status = session?.status ?? "disconnected";
   const meta = STATUS_META[status] ?? STATUS_META.idle;
-  const float = ACTIVE_FLOAT.has(status);
+  const animations = useUi((s) => s.animations);
+  const float = animations && ACTIVE_FLOAT.has(status);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <motion.div

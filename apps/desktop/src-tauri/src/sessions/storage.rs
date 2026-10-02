@@ -105,6 +105,28 @@ pub fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
+/// Settings store (Phase 6). Plain string values; callers interpret.
+pub async fn get_setting(pool: &SqlitePool, key: &str) -> Result<Option<String>, sqlx::Error> {
+    let row: Option<(String,)> = sqlx::query_as("SELECT value FROM settings WHERE key = ?1")
+        .bind(key)
+        .fetch_optional(pool)
+        .await?;
+    Ok(row.map(|r| r.0))
+}
+
+pub async fn set_setting(pool: &SqlitePool, key: &str, value: &str) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
+         ON CONFLICT(key) DO UPDATE SET value = ?2, updated_at = ?3",
+    )
+    .bind(key)
+    .bind(value)
+    .bind(now_ms())
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// One session row.
 #[derive(Debug, Clone)]
 pub struct SessionRow {
