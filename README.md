@@ -21,7 +21,7 @@ telemetry, no cloud, no source code or prompts stored on disk.
 
 ## Requirements
 
-* Linux (developed and tested on Hyprland/Wayland; X11 untested)
+* Linux (developed and tested on Hyprland/Wayland; X11 best-effort — same code path, no X11-specific handling, reports welcome)
 * [OpenCode](https://opencode.ai) 1.18+ (plugin API `event`, permission events)
 * `opencode serve` running **if** you want to answer permissions (see below)
 
