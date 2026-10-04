@@ -31,33 +31,52 @@ export function PermissionBubble({
 }) {
   const [busy, setBusy] = useState<Reply | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const stale = Date.now() - pending.askedAt > STALE_MS;
+  const [now, setNow] = useState(() => Date.now());
+  const stale = now - pending.askedAt > STALE_MS;
   const allowRef = useRef<HTMLButtonElement>(null);
+  const liveId = useRef(pending.requestId);
 
   // Focus Allow so the common answer is one Enter away.
   useEffect(() => {
+    liveId.current = pending.requestId;
+    setBusy(null);
+    setError(null);
     allowRef.current?.focus();
   }, [pending.requestId]);
 
+  // Re-render age/stale badge without new snapshots.
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
   async function answer(reply: Reply) {
+    const id = pending.requestId;
     setBusy(reply);
     setError(null);
     try {
-      await invoke("reply_permission", { requestId: pending.requestId, reply });
+      await invoke("reply_permission", { requestId: id, reply });
+      if (liveId.current !== id) return; // superseded: session moved on
       onDone();
     } catch (e) {
-      setError(typeof e === "string" ? e : "reply failed");
+      if (liveId.current !== id) return;
+      setError(e instanceof Error ? e.message : typeof e === "string" ? e : "reply failed");
     } finally {
-      setBusy(null);
+      if (liveId.current === id) setBusy(null);
     }
   }
 
   return (
     <div
-      role="group"
+      role="alertdialog"
       aria-label="Permission request"
+      aria-describedby="neko-perm-action"
+      aria-live="assertive"
       onKeyDown={(e) => {
-        if (e.key === "Escape") onCancel();
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          onCancel();
+        }
       }}
       style={{
         marginTop: 10,
@@ -86,6 +105,7 @@ export function PermissionBubble({
         {project} · {age(pending.askedAt)}
       </div>
       <div
+        id="neko-perm-action"
         style={{
           fontFamily: "monospace",
           fontSize: 12,

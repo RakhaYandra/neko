@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useUi } from "../../stores/ui";
 
@@ -10,11 +10,13 @@ async function get(key: string): Promise<string | null> {
   }
 }
 
-async function set(key: string, value: string): Promise<void> {
+async function set(key: string, value: string): Promise<boolean> {
   try {
     await invoke("set_setting", { key, value });
+    return true;
   } catch {
-    // Settings failures stay local; the toggle still reflects intent.
+    // Settings failures stay local; caller rolls back the toggle.
+    return false;
   }
 }
 
@@ -39,15 +41,18 @@ function Row({
 }
 
 function Toggle({
+  label,
   on,
   onFlip,
 }: {
+  label: string;
   on: boolean;
   onFlip: () => void;
 }) {
   return (
     <button
       onClick={onFlip}
+      aria-label={label}
       style={{
         width: 36,
         height: 20,
@@ -86,38 +91,45 @@ export function Settings() {
   const setExpanded = useUi((s) => s.setExpanded);
 
   useEffect(() => {
+    let mounted = true;
     void (async () => {
-      if ((await get("notifications")) === "0") setNotif(false);
-      if ((await get("always_on_top")) === "0") setOnTop(false);
+      if ((await get("notifications")) === "0" && mounted) setNotif(false);
+      if ((await get("always_on_top")) === "0" && mounted) setOnTop(false);
       const anim = await get("animations");
-      if (anim !== null) setAnimations(anim !== "0");
+      if (anim !== null && mounted) setAnimations(anim !== "0");
       const op = await get("opacity");
-      if (op !== null) {
+      if (op !== null && mounted) {
         const v = Number.parseFloat(op);
         if (Number.isFinite(v)) setOpacity(Math.min(1, Math.max(0.4, v)));
       }
       try {
-        setAuto(await invoke<boolean>("is_autostart", {}));
+        const auto = await invoke<boolean>("is_autostart", {});
+        if (mounted) setAuto(auto);
       } catch {
         // Autostart state unknown; leave default.
       }
     })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   async function flipNotif() {
-    const next = !notif;
+    const prev = notif;
+    const next = !prev;
     setNotif(next);
-    await set("notifications", next ? "1" : "0");
+    if (!(await set("notifications", next ? "1" : "0"))) setNotif(prev);
   }
 
   async function flipOnTop() {
-    const next = !onTop;
+    const prev = onTop;
+    const next = !prev;
     setOnTop(next);
-    await set("always_on_top", next ? "1" : "0");
     try {
+      if (!(await set("always_on_top", next ? "1" : "0"))) throw new Error("persist failed");
       await invoke("set_always_on_top", { enabled: next });
     } catch {
-      // Window call failed; stored value still applies next launch.
+      setOnTop(prev);
     }
   }
 
@@ -132,9 +144,31 @@ export function Settings() {
   }
 
   async function flipAnimations() {
-    const next = !animations;
+    const prev = animations;
+    const next = !prev;
     setAnimations(next);
-    await set("animations", next ? "1" : "0");
+    if (!(await set("animations", next ? "1" : "0"))) setAnimations(prev);
+  }
+
+  const opacityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (opacityTimer.current) clearTimeout(opacityTimer.current);
+    };
+  }, []);
+
+  function changeOpacity(v: number) {
+    setOpacity(v);
+    if (opacityTimer.current) clearTimeout(opacityTimer.current);
+    opacityTimer.current = setTimeout(() => {
+      void set("opacity", String(v));
+    }, 200);
+  }
+
+  function commitOpacity(v: number) {
+    if (opacityTimer.current) clearTimeout(opacityTimer.current);
+    void set("opacity", String(v));
   }
 
   return (
@@ -143,27 +177,33 @@ export function Settings() {
         <div style={{ fontSize: 12, fontWeight: 700, flex: 1 }}>Settings</div>
         <button
           onClick={() => setExpanded(false)}
+          aria-label="Close settings"
           style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontSize: 14, opacity: 0.7 }}
         >
           ✕
         </button>
       </div>
-      <Row label="Notifications" hint="Permission, completed, error" control={<Toggle on={notif} onFlip={() => void flipNotif()} />} />
-      <Row label="Always on top" control={<Toggle on={onTop} onFlip={() => void flipOnTop()} />} />
-      <Row label="Start on login" control={<Toggle on={auto} onFlip={() => void flipAuto()} />} />
-      <Row label="Animations" control={<Toggle on={animations} onFlip={() => void flipAnimations()} />} />
+      <Row label="Notifications" hint="Permission, completed, error" control={<Toggle label="Notifications" on={notif} onFlip={() => void flipNotif()} />} />
+      <Row label="Always on top" control={<Toggle label="Always on top" on={onTop} onFlip={() => void flipOnTop()} />} />
+      <Row label="Start on login" control={<Toggle label="Start on login" on={auto} onFlip={() => void flipAuto()} />} />
+      <Row label="Animations" control={<Toggle label="Animations" on={animations} onFlip={() => void flipAnimations()} />} />
       <Row
         label={`Opacity ${Math.round(opacity * 100)}%`}
         control={
           <input
             type="range"
+            aria-label="Opacity"
             min={40}
             max={100}
             value={Math.round(opacity * 100)}
             onChange={(e) => {
-              const v = Number(e.target.value) / 100;
-              setOpacity(v);
-              void set("opacity", String(v));
+              changeOpacity(Number(e.target.value) / 100);
+            }}
+            onPointerUp={(e) => {
+              commitOpacity(Number((e.target as HTMLInputElement).value) / 100);
+            }}
+            onBlur={(e) => {
+              commitOpacity(Number((e.target as HTMLInputElement).value) / 100);
             }}
             style={{ width: 110 }}
           />

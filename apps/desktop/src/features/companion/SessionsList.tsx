@@ -11,14 +11,22 @@ export function SessionsList({
   selectedId: string | null;
   onSelect: (id: string | null) => void;
 }) {
+  if (sessions.length === 0) {
+    return (
+      <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+        No sessions — waiting for OpenCode.
+      </div>
+    );
+  }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
+    <div role="list" style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 10 }}>
       {sessions.map((s) => {
         const active = selectedId === s.id || (selectedId === null && sessions[0] === s);
         return (
           <button
             key={s.id}
             onClick={() => onSelect(active && selectedId !== null ? null : s.id)}
+            aria-current={active ? "true" : undefined}
             style={{
               display: "flex",
               alignItems: "center",
