@@ -20,7 +20,17 @@ pub fn db_path() -> String {
 
 /// Open (creating) the pool and ensure the schema exists.
 /// WAL + busy timeout keep single-process concurrency boring.
+/// Refuses to fall back to world-writable /tmp when neither NEKO_DB,
+/// XDG_DATA_HOME nor HOME is set — fail closed instead of scattering DB.
 pub async fn open() -> Result<SqlitePool, sqlx::Error> {
+    if std::env::var("NEKO_DB").is_err()
+        && std::env::var("XDG_DATA_HOME").is_err()
+        && std::env::var("HOME").is_err()
+    {
+        return Err(sqlx::Error::Configuration(
+            "refusing to use /tmp fallback: set HOME, XDG_DATA_HOME or NEKO_DB".into(),
+        ));
+    }
     let path = db_path();
     if let Some(parent) = std::path::Path::new(&path).parent() {
         let _ = std::fs::create_dir_all(parent);
@@ -30,6 +40,12 @@ pub async fn open() -> Result<SqlitePool, sqlx::Error> {
         .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
         .busy_timeout(std::time::Duration::from_secs(5));
     let pool = SqlitePool::connect_with(opts).await?;
+    sqlx::query("PRAGMA synchronous = NORMAL")
+        .execute(&pool)
+        .await?;
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&pool)
+        .await?;
     init_schema(&pool).await?;
     Ok(pool)
 }

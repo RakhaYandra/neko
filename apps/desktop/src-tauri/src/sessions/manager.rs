@@ -203,6 +203,12 @@ impl SessionManager {
         storage::get_setting(&self.pool, key).await.ok().flatten()
     }
 
+    /// Clone the pool for lock-free setting access (avoids holding the
+    /// manager Mutex across pool awaits in tray/commands).
+    pub fn pool(&self) -> SqlitePool {
+        self.pool.clone()
+    }
+
     pub async fn setting_set(&self, key: &str, value: &str) {
         let _ = storage::set_setting(&self.pool, key, value).await;
     }

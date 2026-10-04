@@ -23,6 +23,9 @@ pub const MAX_LINE_BYTES: usize = 64 * 1024;
 /// Never logs payload contents (may contain paths/commands).
 #[allow(dead_code)]
 pub fn validate_line(line: &str) -> Result<String, String> {
+    if line.len() > MAX_LINE_BYTES {
+        return Err("oversize line".to_string());
+    }
     let v: serde_json::Value = serde_json::from_str(line).map_err(|e| e.to_string())?;
     if v.get("v") != Some(&serde_json::json!(PROTOCOL_VERSION)) {
         return Err(format!("bad version: {:?}", v.get("v")));
@@ -43,8 +46,21 @@ pub fn validate_line(line: &str) -> Result<String, String> {
 pub type EventCb = Arc<dyn Fn(String, String) + Send + Sync>;
 
 /// Bind the socket, removing a stale file first and locking it to `0600`.
+/// Refuses to remove a symlink (TOCTOU hijack): the operator must delete it.
 pub async fn bind(sock: &str) -> std::io::Result<UnixListener> {
-    let _ = std::fs::remove_file(sock);
+    match std::fs::symlink_metadata(sock) {
+        Ok(md) if md.file_type().is_symlink() => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                format!("refusing to replace symlink at {sock}"),
+            ));
+        }
+        Ok(_) => {
+            std::fs::remove_file(sock)?;
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(e),
+    }
     let listener = UnixListener::bind(sock)?;
     std::fs::set_permissions(sock, std::fs::Permissions::from_mode(0o600))?;
     Ok(listener)
@@ -120,6 +136,25 @@ mod tests {
     fn rejects_missing_at_and_empty_type() {
         assert!(validate_line(r#"{"v":1,"type":"session.status"}"#).is_err());
         assert!(validate_line(r#"{"v":1,"type":"","at":1}"#).is_err());
+    }
+
+    #[test]
+    fn rejects_oversize_line_early() {
+        let big = "x".repeat(MAX_LINE_BYTES + 1);
+        let line = format!("{{\"v\":1,\"type\":\"{big}\",\"at\":1}}");
+        assert!(validate_line(&line).is_err());
+    }
+
+    #[tokio::test]
+    async fn refuses_symlink_socket() {
+        let target = format!("/tmp/neko-target-{}.sock", std::process::id());
+        let link = format!("/tmp/neko-link-{}.sock", std::process::id());
+        let _ = std::fs::remove_file(&target);
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        assert!(bind(&link).await.is_err());
+        let _ = std::fs::remove_file(&link);
+        let _ = std::fs::remove_file(&target);
     }
 
     #[tokio::test]

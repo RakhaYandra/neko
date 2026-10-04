@@ -65,15 +65,27 @@ async fn reply_permission(
 #[tauri::command]
 async fn get_setting(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
     let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
-    let value = manager.lock().await.setting_get(&key).await;
-    Ok(value)
+    let pool = { manager.lock().await.pool() };
+    Ok(storage_get(&pool, &key).await)
 }
 
 #[tauri::command]
 async fn set_setting(app: tauri::AppHandle, key: String, value: String) -> Result<(), String> {
     let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
-    manager.lock().await.setting_set(&key, &value).await;
+    let pool = { manager.lock().await.pool() };
+    storage_set(&pool, &key, &value).await;
     Ok(())
+}
+
+async fn storage_get(pool: &sqlx::SqlitePool, key: &str) -> Option<String> {
+    sessions::storage::get_setting(pool, key)
+        .await
+        .ok()
+        .flatten()
+}
+
+async fn storage_set(pool: &sqlx::SqlitePool, key: &str, value: &str) {
+    let _ = sessions::storage::set_setting(pool, key, value).await;
 }
 
 #[tauri::command]
@@ -148,10 +160,13 @@ fn toggle_companion(app: &tauri::AppHandle) {
 
 async fn tray_state(manager: &SharedManager, app: &tauri::AppHandle) -> tray::TrayState {
     use tauri_plugin_autostart::ManagerExt;
-    let m = manager.lock().await;
+    let (active_sessions, pool) = {
+        let m = manager.lock().await;
+        (m.active_count(), m.pool())
+    };
     tray::TrayState {
-        active_sessions: m.active_count(),
-        notifications_on: m.setting_get("notifications").await.as_deref() != Some("0"),
+        active_sessions,
+        notifications_on: storage_get(&pool, "notifications").await.as_deref() != Some("0"),
         autostart_on: app.autolaunch().is_enabled().unwrap_or(false),
     }
 }
@@ -260,7 +275,8 @@ pub fn run() {
             // Consumer: validated events -> session engine -> UI snapshot.
             // Storage failure only kills this task (logged); the app survives.
             // The manager is shared with commands and tray toggles.
-            let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<(String, String)>();
+            // Bounded so a flooding sender can't grow memory without limit.
+            let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, String)>(512);
             let (ready_tx, ready_rx) = tokio::sync::oneshot::channel::<SharedManager>();
             tauri::async_runtime::spawn(async move {
                 let pool = match sessions::storage::open().await {
@@ -306,42 +322,48 @@ pub fn run() {
             });
             let manage_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                if let Ok(manager) = ready_rx.await {
-                    // Tray + placement need the manager; build once ready.
-                    rebuild_tray(&manager, &manage_handle).await;
-                    if let Err(e) = place_top_center(&manage_handle) {
-                        tracing::warn!(error = %e, "initial placement failed");
-                    }
-                    // Stale sweeper: sessions idle >30min go disconnected.
-                    let sweep_manager = manager.clone();
-                    let sweep_handle = manage_handle.clone();
-                    tauri::async_runtime::spawn(async move {
-                        let mut tick = tokio::time::interval(std::time::Duration::from_secs(60));
-                        loop {
-                            tick.tick().await;
-                            let (n, snapshot) = {
-                                let mut m = sweep_manager.lock().await;
-                                let n = m.sweep_stale(30 * 60 * 1000).await;
-                                (n, m.snapshot().to_string())
-                            };
-                            if n > 0 {
-                                let _ = sweep_handle.emit("neko-event", snapshot);
-                                rebuild_tray(&sweep_manager, &sweep_handle).await;
-                            }
+                match ready_rx.await {
+                    Ok(manager) => {
+                        // Tray + placement need the manager; build once ready.
+                        rebuild_tray(&manager, &manage_handle).await;
+                        if let Err(e) = place_top_center(&manage_handle) {
+                            tracing::warn!(error = %e, "initial placement failed");
                         }
-                    });
-                    // Tray toggle events from Rust side.
-                    let toggle_manager = manager.clone();
-                    let toggle_handle = manage_handle.clone();
-                    manage_handle.listen("neko-tray", move |event| {
-                        let id = event.payload().to_string();
-                        let m = toggle_manager.clone();
-                        let h = toggle_handle.clone();
+                        // Stale sweeper: sessions idle >30min go disconnected.
+                        let sweep_manager = manager.clone();
+                        let sweep_handle = manage_handle.clone();
                         tauri::async_runtime::spawn(async move {
-                            toggle_setting(&m, &h, id.trim_matches('"')).await;
+                            let mut tick =
+                                tokio::time::interval(std::time::Duration::from_secs(60));
+                            loop {
+                                tick.tick().await;
+                                let (n, snapshot) = {
+                                    let mut m = sweep_manager.lock().await;
+                                    let n = m.sweep_stale(30 * 60 * 1000).await;
+                                    (n, m.snapshot().to_string())
+                                };
+                                if n > 0 {
+                                    let _ = sweep_handle.emit("neko-event", snapshot);
+                                    rebuild_tray(&sweep_manager, &sweep_handle).await;
+                                }
+                            }
                         });
-                    });
-                    manage_handle.manage(manager);
+                        // Tray toggle events from Rust side.
+                        let toggle_manager = manager.clone();
+                        let toggle_handle = manage_handle.clone();
+                        manage_handle.listen("neko-tray", move |event| {
+                            let id = event.payload().to_string();
+                            let m = toggle_manager.clone();
+                            let h = toggle_handle.clone();
+                            tauri::async_runtime::spawn(async move {
+                                toggle_setting(&m, &h, id.trim_matches('"')).await;
+                            });
+                        });
+                        manage_handle.manage(manager);
+                    }
+                    Err(_) => {
+                        tracing::error!("session engine unavailable: storage failed to start");
+                    }
                 }
             });
             tauri::async_runtime::spawn(async move {
@@ -349,7 +371,10 @@ pub fn run() {
                     Ok(listener) => {
                         tracing::info!(sock = %sock, "ipc listening");
                         let on_event: ipc::EventCb = Arc::new(move |t, line| {
-                            let _ = tx.send((t, line));
+                            if let Err(e) = tx.try_send((t, line)) {
+                                tracing::warn!("ipc channel full, dropping event");
+                                let _ = e;
+                            }
                         });
                         ipc::serve_on(listener, on_event).await;
                     }
@@ -367,15 +392,14 @@ async fn toggle_setting(manager: &SharedManager, app: &tauri::AppHandle, id: &st
     use tauri_plugin_autostart::ManagerExt;
     match id {
         "notif" => {
-            let m = manager.lock().await;
-            let cur = m.setting_get("notifications").await;
+            let pool = { manager.lock().await.pool() };
+            let cur = storage_get(&pool, "notifications").await;
             let next = if cur.as_deref() == Some("0") {
                 "1"
             } else {
                 "0"
             };
-            m.setting_set("notifications", next).await;
-            drop(m);
+            storage_set(&pool, "notifications", next).await;
             rebuild_tray(manager, app).await;
         }
         "auto" => {
