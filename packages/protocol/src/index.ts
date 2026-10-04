@@ -5,9 +5,13 @@ export const PROTOCOL_VERSION = 1 as const;
 const base = z.object({
   v: z.literal(PROTOCOL_VERSION),
   type: z.string(),
-  at: z.number(),
+  at: z.number().int().nonnegative(),
   sessionId: z.string().nullish(),
 });
+
+export function isSupportedVersion(v: unknown): boolean {
+  return v === PROTOCOL_VERSION;
+}
 
 export const sessionCreated = base.extend({
   type: z.literal("session.created"),

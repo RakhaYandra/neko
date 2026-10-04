@@ -55,4 +55,11 @@ describe("protocol", () => {
   it("rejects malformed json", () => {
     expect(() => parseMessage("not-json{{{")).toThrow();
   });
+  it("rejects non-integer / negative at", () => {
+    for (const at of [1.5, -1, "now", null]) {
+      expect(() =>
+        parseMessage(JSON.stringify({ v: 1, type: "session.status", at, payload: {} })),
+      ).toThrow();
+    }
+  });
 });
