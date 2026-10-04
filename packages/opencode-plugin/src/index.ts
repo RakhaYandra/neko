@@ -22,8 +22,18 @@ function normalizeDecision(r: unknown): "allow" | "deny" {
   return r === "once" || r === "always" ? "allow" : "deny";
 }
 
+// Socket path precedence, mirroring Rust `ipc::socket_path()`:
+// `NEKO_SOCK` (non-empty) > `$XDG_RUNTIME_DIR/neko.sock` > `/tmp/neko.sock`.
+export function nekoSocketPath(): string {
+  const env = process.env.NEKO_SOCK;
+  if (env && env.length > 0) return env;
+  const xdg = process.env.XDG_RUNTIME_DIR;
+  if (xdg && xdg.length > 0) return `${xdg}/neko.sock`;
+  return "/tmp/neko.sock";
+}
+
 export const NekoPlugin = async () => {
-  const SOCK = process.env.NEKO_SOCK ?? "/tmp/neko.sock";
+  const SOCK = nekoSocketPath();
   const DEBUG = process.env.NEKO_DEBUG === "1";
   const send = async (type: string, sessionId: string | null, payload: Record<string, unknown>) => {
     try {

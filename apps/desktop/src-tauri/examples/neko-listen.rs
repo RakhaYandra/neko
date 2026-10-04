@@ -1,5 +1,6 @@
 //! Headless IPC listener for debugging and E2E tests (see docs/API-GUIDE.md).
-//! Usage: `NEKO_SOCK=/tmp/neko.sock cargo run --example neko-listen`
+//! Usage: `cargo run --example neko-listen`
+//! (uses the same default socket as the app; override with `NEKO_SOCK`).
 //! Prints one validated `type` per line; never prints payloads.
 use std::sync::Arc;
 

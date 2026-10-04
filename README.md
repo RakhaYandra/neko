@@ -89,7 +89,7 @@ requests display "answer in the terminal" instead of buttons. TUI-only sessions
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `NEKO_SOCK` | `/tmp/neko.sock` | Unix socket the plugin pushes events to |
+| `NEKO_SOCK` | `$XDG_RUNTIME_DIR/neko.sock` (else `/tmp/neko.sock`) | Unix socket the plugin pushes events to. Explicit `NEKO_SOCK` wins; otherwise both sides use the same default, so restart the app and the plugin together after upgrading or events will go missing. |
 | `NEKO_DB` | `$XDG_DATA_HOME/neko/neko.db` | SQLite location |
 | `NEKO_OPENCODE_URL` | *(unset)* | OpenCode serve base URL for permission replies |
 
@@ -116,7 +116,8 @@ npm run lint
 Headless event listener, useful for debugging the bridge:
 
 ```sh
-NEKO_SOCK=/tmp/neko.sock cargo run --manifest-path apps/desktop/src-tauri/Cargo.toml --example neko-listen
+cargo run --manifest-path apps/desktop/src-tauri/Cargo.toml --example neko-listen
+# override only when debugging: NEKO_SOCK=/tmp/dbg.sock ... neko-listen
 ```
 
 ## Architecture in one diagram

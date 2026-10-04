@@ -4,7 +4,7 @@ import { createServer } from "node:net";
 import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { NekoPlugin } from "../dist/index.js";
+import { NekoPlugin, nekoSocketPath } from "../dist/index.js";
 
 let sock = "";
 let server = null;
@@ -59,6 +59,26 @@ function last() {
   assert.ok(captured.length > 0, "expected one socket line");
   return captured[captured.length - 1];
 }
+
+test("socket path precedence mirrors Rust", () => {
+  const savedSock = process.env.NEKO_SOCK;
+  const savedXdg = process.env.XDG_RUNTIME_DIR;
+  try {
+    delete process.env.NEKO_SOCK;
+    process.env.XDG_RUNTIME_DIR = "/run/user/1000";
+    assert.equal(nekoSocketPath(), "/run/user/1000/neko.sock");
+    process.env.NEKO_SOCK = "/tmp/custom.sock";
+    assert.equal(nekoSocketPath(), "/tmp/custom.sock");
+    process.env.NEKO_SOCK = "";
+    process.env.XDG_RUNTIME_DIR = "";
+    assert.equal(nekoSocketPath(), "/tmp/neko.sock");
+  } finally {
+    if (savedSock === undefined) delete process.env.NEKO_SOCK;
+    else process.env.NEKO_SOCK = savedSock;
+    if (savedXdg === undefined) delete process.env.XDG_RUNTIME_DIR;
+    else process.env.XDG_RUNTIME_DIR = savedXdg;
+  }
+});
 
 test("plugin exposes event + tool hooks without shell", async () => {
   const hooks = await NekoPlugin({});
