@@ -13,7 +13,7 @@ const CROP = 80;
 
 export const SPRITE_URL = spriteUrl;
 
-// Card index per Neko state (POSE-MAP.md). Secondary poses reserved.
+// Card index per Neko state. Secondary poses reserved for later phases.
 export const STATE_POSE: Record<string, number> = {
   disconnected: 6,
   idle: 0,
