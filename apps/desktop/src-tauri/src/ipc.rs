@@ -6,9 +6,23 @@ use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::net::UnixListener;
 
-/// Default socket path. Overridable via `NEKO_SOCK` env.
+/// Default socket path: `NEKO_SOCK` wins when non-empty, else
+/// `$XDG_RUNTIME_DIR/neko.sock` (per-user, `0700`), else `/tmp/neko.sock`.
+/// Both the Rust core and the plugin implement this same precedence, so a
+/// default setup needs no env at all — but mixed versions must be restarted
+/// together, or the sender and listener will use different paths.
 pub fn socket_path() -> String {
-    std::env::var("NEKO_SOCK").unwrap_or_else(|_| "/tmp/neko.sock".to_string())
+    if let Ok(s) = std::env::var("NEKO_SOCK") {
+        if !s.is_empty() {
+            return s;
+        }
+    }
+    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+        if !xdg.is_empty() {
+            return format!("{xdg}/neko.sock");
+        }
+    }
+    "/tmp/neko.sock".to_string()
 }
 
 /// Protocol version we accept. Must match `@neko/protocol` PROTOCOL_VERSION.
@@ -45,6 +59,23 @@ pub fn validate_line(line: &str) -> Result<String, String> {
 /// Callback for validated events: (`type`, raw validated line).
 pub type EventCb = Arc<dyn Fn(String, String) + Send + Sync>;
 
+/// True when the peer runs as our own effective uid (Linux `SO_PEERCRED`).
+/// Unverifiable peers are treated as foreign: fail closed.
+fn same_uid(stream: &tokio::net::UnixStream) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        match stream.peer_cred() {
+            Ok(cred) => cred.uid() == unsafe { libc::geteuid() },
+            Err(_) => false,
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = stream;
+        true
+    }
+}
+
 /// Bind the socket, removing a stale file first and locking it to `0600`.
 /// Refuses to remove a symlink (TOCTOU hijack): the operator must delete it.
 pub async fn bind(sock: &str) -> std::io::Result<UnixListener> {
@@ -68,12 +99,18 @@ pub async fn bind(sock: &str) -> std::io::Result<UnixListener> {
 
 /// Accept loop: one task per connection, one validated event per line.
 /// Malformed lines are rejected with a warning; the listener never dies.
+/// Connections from a foreign uid are dropped before spawning (SO_PEERCRED);
+/// the `0600` socket mode remains the first layer.
 /// Idle connections are dropped after 30s so stuck senders can't pile up.
 pub async fn serve_on(listener: UnixListener, on_event: EventCb) {
     loop {
         let Ok((stream, _)) = listener.accept().await else {
             continue;
         };
+        if !same_uid(&stream) {
+            tracing::warn!("rejected ipc connection from foreign uid");
+            continue;
+        }
         let on_event = on_event.clone();
         tokio::spawn(async move {
             let mut lines = BufReader::new(stream).lines();
@@ -143,6 +180,32 @@ mod tests {
         let big = "x".repeat(MAX_LINE_BYTES + 1);
         let line = format!("{{\"v\":1,\"type\":\"{big}\",\"at\":1}}");
         assert!(validate_line(&line).is_err());
+    }
+
+    #[test]
+    fn socket_path_precedence() {
+        let saved_sock = std::env::var("NEKO_SOCK").ok();
+        let saved_xdg = std::env::var("XDG_RUNTIME_DIR").ok();
+        std::env::remove_var("NEKO_SOCK");
+        std::env::set_var("XDG_RUNTIME_DIR", "/run/user/1000");
+        assert_eq!(socket_path(), "/run/user/1000/neko.sock");
+        std::env::set_var("NEKO_SOCK", "/tmp/custom.sock");
+        assert_eq!(socket_path(), "/tmp/custom.sock");
+        // Empty values fall through.
+        std::env::set_var("NEKO_SOCK", "");
+        std::env::set_var("XDG_RUNTIME_DIR", "");
+        assert_eq!(socket_path(), "/tmp/neko.sock");
+        std::env::remove_var("NEKO_SOCK");
+        std::env::remove_var("XDG_RUNTIME_DIR");
+        assert_eq!(socket_path(), "/tmp/neko.sock");
+        match saved_sock {
+            Some(v) => std::env::set_var("NEKO_SOCK", v),
+            None => std::env::remove_var("NEKO_SOCK"),
+        }
+        match saved_xdg {
+            Some(v) => std::env::set_var("XDG_RUNTIME_DIR", v),
+            None => std::env::remove_var("XDG_RUNTIME_DIR"),
+        }
     }
 
     #[tokio::test]
