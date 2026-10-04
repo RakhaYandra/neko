@@ -21,5 +21,5 @@ export const useUi = create<UiState>((set) => ({
   animations: true,
   setAnimations: (animations) => set({ animations }),
   opacity: 0.88,
-  setOpacity: (opacity) => set({ opacity }),
+  setOpacity: (opacity) => set({ opacity: Math.min(1, Math.max(0.4, opacity)) }),
 }));

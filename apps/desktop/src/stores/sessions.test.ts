@@ -26,4 +26,16 @@ describe("sessions store", () => {
     expect(activeSession(useSessions.getState())?.id).toBe("alpha");
     useSessions.getState().select(null);
   });
+
+  it("drops orphan pending for gone sessions", () => {
+    useSessions.getState().setSnapshot(
+      [{ id: "alpha", project: "alpha", status: "working", lastActivityAt: 5 }],
+      [
+        { requestId: "per_1", sessionId: "alpha", action: "bash", resource: null, askedAt: 5 },
+        { requestId: "per_2", sessionId: "ghost", action: "bash", resource: null, askedAt: 5 },
+      ],
+    );
+    expect(useSessions.getState().pending.map((p) => p.requestId)).toEqual(["per_1"]);
+    useSessions.getState().setSnapshot([]);
+  });
 });

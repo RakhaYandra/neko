@@ -49,7 +49,11 @@ export default function App() {
       } catch {
         // Non-snapshot payloads are ignored by the Phase 6 UI.
       }
-    }).then((f) => (off = f));
+    })
+      .then((f) => (off = f))
+      .catch(() => {
+        // Tauri event unavailable (tests/headless): UI stays empty.
+      });
     return () => off?.();
   }, [setSnapshot]);
 
@@ -59,7 +63,13 @@ export default function App() {
     invoke("recenter", {}).catch(() => {});
     let off: (() => void) | undefined;
     listen<string>("neko-ui", (e) => {
-      const action = e.payload.replace(/^"|"$/g, "");
+      let action = e.payload;
+      try {
+        const parsed: unknown = JSON.parse(e.payload);
+        if (typeof parsed === "string") action = parsed;
+      } catch {
+        action = e.payload.replace(/^"|"$/g, "");
+      }
       if (action === "expand") {
         setSettingsView(false);
         setExpanded(true);
@@ -67,7 +77,9 @@ export default function App() {
         setExpanded(true);
         setSettingsView(true);
       }
-    }).then((f) => (off = f));
+    })
+      .then((f) => (off = f))
+      .catch(() => {});
     return () => off?.();
   }, [setExpanded, setSettingsView]);
 
@@ -111,14 +123,23 @@ export default function App() {
           boxSizing: "border-box",
         }}
       >
-        <div
+        <button
           data-tauri-drag-region
           onClick={toggle}
-          title={expanded ? "Collapse" : "Expand"}
-          style={{ cursor: "pointer" }}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Collapse companion" : "Expand companion"}
+          style={{
+            cursor: "pointer",
+            background: "none",
+            border: "none",
+            padding: 0,
+            width: "100%",
+            textAlign: "left",
+            color: "inherit",
+          }}
         >
           <Companion session={active} />
-        </div>
+        </button>
         {expanded && activePending && active && (
           <PermissionBubble
             pending={activePending}

@@ -1,9 +1,18 @@
 import { create } from "zustand";
 
+export type NekoStatus =
+  | "disconnected"
+  | "idle"
+  | "working"
+  | "tool_running"
+  | "waiting_permission"
+  | "completed"
+  | "error";
+
 export interface NekoSession {
   id: string;
   project: string;
-  status: string;
+  status: NekoStatus | string;
   lastActivityAt: number;
 }
 
@@ -29,12 +38,17 @@ export const useSessions = create<SessionsState>((set) => ({
   pending: [],
   selectedId: null,
   setSnapshot: (sessions, pending = []) =>
-    set((s) => ({
-      sessions,
-      pending,
-      // Drop selection when its session disappears.
-      selectedId: sessions.some((x) => x.id === s.selectedId) ? s.selectedId : null,
-    })),
+    set((s) => {
+      const ids = new Set(sessions.map((x) => x.id));
+      return {
+        sessions,
+        // Drop orphan pending (stale Rust snapshot ordering) so the bubble
+        // never renders for a gone session.
+        pending: pending.filter((p) => ids.has(p.sessionId)),
+        // Drop selection when its session disappears.
+        selectedId: sessions.some((x) => x.id === s.selectedId) ? s.selectedId : null,
+      };
+    }),
   select: (selectedId) => set({ selectedId }),
 }));
 
