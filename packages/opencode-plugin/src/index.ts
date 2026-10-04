@@ -1,17 +1,20 @@
 // Neko OpenCode plugin (observe-only, Phase 2).
 // Adapts OpenCode hooks into the Neko envelope (ADR-003):
 // `{v:1, type:"<neko.type>", at, sessionId, payload}`.
-// Fire-and-forget: `|| true` so the agent never blocks on Neko.
+// Fire-and-forget: agent never blocks on Neko. No shell: writes NDJSON
+// straight to the Unix socket via node:net, so payload quotes can't inject.
 // OpenCode ctx is untyped by upstream — `any` is honest here.
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createConnection } from "node:net";
+
 type NekoStatus = "idle" | "working" | "tool_running" | "completed" | "error";
 
-// Unknown OpenCode status strings map to "idle" (no known activity)
-// rather than inventing a busier state.
+// Unknown OpenCode status strings map to "working" (assume activity)
+// rather than hiding work as idle.
 function normalizeStatus(s: unknown): NekoStatus {
   if (s === "idle" || s === "working" || s === "tool_running" || s === "completed" || s === "error")
     return s;
-  return "idle";
+  return "working";
 }
 
 // Fail-closed display decision: only explicit approvals read as allow.
@@ -19,15 +22,58 @@ function normalizeDecision(r: unknown): "allow" | "deny" {
   return r === "once" || r === "always" ? "allow" : "deny";
 }
 
-export const NekoPlugin = async ({ $ }: any) => {
+export const NekoPlugin = async () => {
   const SOCK = process.env.NEKO_SOCK ?? "/tmp/neko.sock";
+  const DEBUG = process.env.NEKO_DEBUG === "1";
   const send = async (type: string, sessionId: string | null, payload: Record<string, unknown>) => {
     try {
       const line = JSON.stringify({ v: 1, type, at: Date.now(), sessionId, payload });
-      await $`printf '%s\n' ${line} | timeout 0.3 socat - UNIX-CONNECT:${SOCK} 2>/dev/null || true`;
+      await new Promise<void>((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (!done) {
+            done = true;
+            resolve();
+          }
+        };
+        try {
+          const conn = createConnection(SOCK);
+          const timer = setTimeout(() => {
+            try {
+              conn.destroy();
+            } catch {
+              // never blocks the agent
+            }
+            finish();
+          }, 300);
+          conn.on("error", (e) => {
+            if (DEBUG) console.debug("[neko] socket send skipped:", String(e?.message ?? e));
+            clearTimeout(timer);
+            try {
+              conn.destroy();
+            } catch {
+              // ignore
+            }
+            finish();
+          });
+          conn.on("connect", () => {
+            conn.end(line + "\n", () => {
+              clearTimeout(timer);
+              finish();
+            });
+          });
+        } catch (e) {
+          if (DEBUG) console.debug("[neko] socket send skipped:", String(e));
+          finish();
+        }
+      });
     } catch {
       // intentionally silent: Neko must never break the agent
     }
+  };
+  const requestIdOf = (p: any): string | undefined => {
+    const v = p.requestID ?? p.requestId ?? p.id;
+    return v != null ? String(v) : undefined;
   };
   const sessionOf = (p: any, info: any): string | null =>
     p.sessionID ?? info.sessionID ?? info.id ?? null;
@@ -64,19 +110,22 @@ export const NekoPlugin = async ({ $ }: any) => {
         await send("session.diff", sessionId, { files });
       } else if (event.type === "permission.asked") {
         const patterns = Array.isArray(p.patterns) ? p.patterns.join(",") : undefined;
-        // `id` is the reply key (R4). `permission` already names the tool;
-        // upstream `tool` is an object {messageID, callID}, not forwarded.
+        // Reply key: upstream uses `id` and sometimes `requestID`; accept both.
+        // `permission` already names the tool; upstream `tool` is an object
+        // {messageID, callID}, not forwarded.
+        const requestId = requestIdOf(p);
         await send("permission.requested", sessionId, {
           action: String(p.permission ?? "unknown"),
           ...(patterns ? { resource: patterns } : {}),
-          ...(p.id != null ? { requestId: String(p.id) } : {}),
+          ...(requestId ? { requestId } : {}),
         });
       } else if (event.type === "permission.replied") {
         const action = p.permission != null ? String(p.permission) : undefined;
+        const requestId = requestIdOf(p);
         await send("permission.resolved", sessionId, {
           ...(action ? { action } : {}),
           decision: normalizeDecision(p.response ?? p.reply),
-          ...(p.requestID != null ? { requestId: String(p.requestID) } : {}),
+          ...(requestId ? { requestId } : {}),
         });
       } else if (event.type === "file.edited") {
         await send("file.edited", sessionId, {
