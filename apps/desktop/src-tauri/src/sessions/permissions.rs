@@ -14,6 +14,17 @@ pub struct PendingPermission {
     pub asked_at_ms: i64,
 }
 
+/// One unresolved question (option picker) from OpenCode. Answers are label
+/// selections, never free text in MVP — same single-shot gate as permissions.
+#[derive(Debug, Clone)]
+pub struct PendingQuestion {
+    pub request_id: String,
+    pub session_id: String,
+    /// Raw `questions` array from the event payload (validated upstream).
+    pub questions: serde_json::Value,
+    pub asked_at_ms: i64,
+}
+
 /// Strict reply vocabulary. Anything else is rejected before any HTTP.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReplyDecision {
@@ -110,6 +121,100 @@ pub async fn reply(
     )))
 }
 
+/// POST selected option labels for one question. `answers` nests per
+/// question in order: `[[labels for q0], [labels for q1], …]`.
+/// 404 means settled or unknown — same AlreadySettled contract as
+/// permissions (drop local copy, never retry).
+pub async fn reply_question(
+    client: &reqwest::Client,
+    base_url: &str,
+    request_id: &str,
+    answers: &[Vec<String>],
+) -> Result<(), ReplyError> {
+    let url = format!(
+        "{}/question/{request_id}/reply",
+        base_url.trim_end_matches('/')
+    );
+    let res = client
+        .post(&url)
+        .json(&serde_json::json!({ "answers": answers }))
+        .send()
+        .await
+        .map_err(|e| ReplyError::Unreachable(trim_err(e.to_string())))?;
+    if res.status().is_success() {
+        return Ok(());
+    }
+    if res.status().as_u16() == 404 {
+        return Err(ReplyError::AlreadySettled);
+    }
+    let status = res.status();
+    let body = res.text().await.unwrap_or_default();
+    Err(ReplyError::Unreachable(format!(
+        "{status}: {}",
+        trim_err(body)
+    )))
+}
+
+/// Reject (dismiss without answering) one question. Same 404 contract.
+pub async fn reject_question(
+    client: &reqwest::Client,
+    base_url: &str,
+    request_id: &str,
+) -> Result<(), ReplyError> {
+    let url = format!(
+        "{}/question/{request_id}/reject",
+        base_url.trim_end_matches('/')
+    );
+    let res = client
+        .post(&url)
+        .send()
+        .await
+        .map_err(|e| ReplyError::Unreachable(trim_err(e.to_string())))?;
+    if res.status().is_success() {
+        return Ok(());
+    }
+    if res.status().as_u16() == 404 {
+        return Err(ReplyError::AlreadySettled);
+    }
+    let status = res.status();
+    let body = res.text().await.unwrap_or_default();
+    Err(ReplyError::Unreachable(format!(
+        "{status}: {}",
+        trim_err(body)
+    )))
+}
+
+/// Rehydrate pending questions after a restart. Best-effort, same shape
+/// tolerance as `list_pending`: items without id/session are skipped.
+pub async fn list_questions(client: &reqwest::Client, base_url: &str) -> Vec<PendingQuestion> {
+    let url = format!("{}/question", base_url.trim_end_matches('/'));
+    let res = match client.get(&url).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::debug!(error = %trim_err(e.to_string()), "question rehydrate skipped");
+            return Vec::new();
+        }
+    };
+    if !res.status().is_success() {
+        return Vec::new();
+    }
+    let items: Vec<serde_json::Value> = res.json().await.unwrap_or_default();
+    let now = super::storage::now_ms();
+    items
+        .iter()
+        .filter_map(|v| {
+            Some(PendingQuestion {
+                request_id: v.get("id")?.as_str()?.to_string(),
+                session_id: v.get("sessionID")?.as_str()?.to_string(),
+                questions: v
+                    .get("questions")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null),
+                asked_at_ms: now,
+            })
+        })
+        .collect()
+}
 /// Does serve know this session? Used on the 404-reply path to tell a
 /// terminal-answered serve ask apart from a TUI-origin ask (which serve can
 /// never answer). Unreachable serve reads as known (conservative: keep the
@@ -228,6 +333,31 @@ mod tests {
         assert!(!session_exists(&client, &base, "ses_x").await);
         // Unreachable reads as known (conservative: keep old message).
         assert!(session_exists(&client, "http://127.0.0.1:1", "ses_1").await);
+    }
+
+    #[tokio::test]
+    async fn question_reply_reject_and_settled_mapping() {
+        let client = http_client();
+        let base = respond_once("200 OK", b"true").await;
+        assert!(
+            reply_question(&client, &base, "que_1", &[vec!["bar-widget".to_string()]])
+                .await
+                .is_ok()
+        );
+
+        let base = respond_once("200 OK", b"true").await;
+        assert!(reject_question(&client, &base, "que_1").await.is_ok());
+
+        let base = respond_once("404 Not Found", b"nope").await;
+        assert_eq!(
+            reply_question(&client, &base, "que_x", &[vec!["a".to_string()]]).await,
+            Err(ReplyError::AlreadySettled)
+        );
+        let base = respond_once("404 Not Found", b"nope").await;
+        assert_eq!(
+            reject_question(&client, &base, "que_x").await,
+            Err(ReplyError::AlreadySettled)
+        );
     }
 
     #[tokio::test]

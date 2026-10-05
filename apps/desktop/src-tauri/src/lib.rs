@@ -81,31 +81,145 @@ async fn answer_permission(
         Err(e) => {
             // Transport problems: entry restored, UI untouched (retry valid).
             if e != permissions::ReplyError::AlreadySettled {
+                tracing::warn!(request = %p.request_id, error = %e, "permission reply failed");
                 manager.lock().await.reinsert_pending(p);
                 return (Err(e.to_string()), None);
             }
-            // Settled upstream. TUI-origin asks are unknown to serve and can
-            // never be answered from Neko — drop and yield to the terminal.
-            if !permissions::session_exists(&http, &base, &p.session_id).await {
-                let snapshot = manager.lock().await.snapshot().to_string();
-                return (
-                    Err(
-                        "answer in the terminal — this ask comes from a terminal session"
-                            .to_string(),
-                    ),
-                    Some(snapshot),
-                );
-            }
-            // Known session, request gone (answered elsewhere or silently
-            // dropped on interrupt): drop our copy and push the truth so the
-            // bubble yields instead of showing dead buttons.
-            let snapshot = manager.lock().await.snapshot().to_string();
-            (
-                Err("no longer pending — settled or interrupted elsewhere".to_string()),
-                Some(snapshot),
-            )
+            let (msg, snap) = settled_message(manager, &http, &base, &p.session_id).await;
+            tracing::warn!(request = %p.request_id, "permission reply settled upstream");
+            (Err(msg), snap)
         }
     }
+}
+
+/// Message + snapshot for an AlreadySettled reply. TUI-origin asks are
+/// unknown to serve and can never be answered from Neko — drop and yield to
+/// the terminal. Known session with a gone request reads settled-or-
+/// interrupted. Always ships a snapshot (self-heal); the caller already
+/// dropped the entry, so no reinsert happens on this path.
+async fn settled_message(
+    manager: &SharedManager,
+    http: &reqwest::Client,
+    base: &str,
+    session_id: &str,
+) -> (String, Option<String>) {
+    if !permissions::session_exists(http, base, session_id).await {
+        let snapshot = manager.lock().await.snapshot().to_string();
+        return (
+            "answer in the terminal — this ask comes from a terminal session".to_string(),
+            Some(snapshot),
+        );
+    }
+    let snapshot = manager.lock().await.snapshot().to_string();
+    (
+        "no longer pending — settled or interrupted elsewhere".to_string(),
+        Some(snapshot),
+    )
+}
+
+/// Answer a question's options. Same single-shot gate and settled mapping
+/// as permissions; no state-machine transition (questions don't move status).
+async fn answer_question(
+    manager: &SharedManager,
+    request_id: &str,
+    answers: &[Vec<String>],
+) -> (Result<(), String>, Option<String>) {
+    let base = match permissions::serve_url() {
+        Some(b) => b,
+        None => return (Err(permissions::ReplyError::NoServeUrl.to_string()), None),
+    };
+    let http = permissions::http_client();
+    let pending = {
+        let mut m = manager.lock().await;
+        m.take_question(request_id)
+    };
+    let Some(q) = pending else {
+        let snapshot = manager.lock().await.snapshot().to_string();
+        return (
+            Err("unknown or already settled (stale view?)".to_string()),
+            Some(snapshot),
+        );
+    };
+    match permissions::reply_question(&http, &base, &q.request_id, answers).await {
+        Ok(()) => {
+            tracing::info!(request = %q.request_id, "question answered");
+            let snapshot = manager.lock().await.snapshot().to_string();
+            (Ok(()), Some(snapshot))
+        }
+        Err(e) => {
+            if e != permissions::ReplyError::AlreadySettled {
+                tracing::warn!(request = %q.request_id, error = %e, "question answer failed");
+                manager.lock().await.reinsert_question(q);
+                return (Err(e.to_string()), None);
+            }
+            let (msg, snap) = settled_message(manager, &http, &base, &q.session_id).await;
+            tracing::warn!(request = %q.request_id, "question answer settled upstream");
+            (Err(msg), snap)
+        }
+    }
+}
+
+async fn reject_question_core(
+    manager: &SharedManager,
+    request_id: &str,
+) -> (Result<(), String>, Option<String>) {
+    let base = match permissions::serve_url() {
+        Some(b) => b,
+        None => return (Err(permissions::ReplyError::NoServeUrl.to_string()), None),
+    };
+    let http = permissions::http_client();
+    let pending = {
+        let mut m = manager.lock().await;
+        m.take_question(request_id)
+    };
+    let Some(q) = pending else {
+        let snapshot = manager.lock().await.snapshot().to_string();
+        return (
+            Err("unknown or already settled (stale view?)".to_string()),
+            Some(snapshot),
+        );
+    };
+    match permissions::reject_question(&http, &base, &q.request_id).await {
+        Ok(()) => {
+            tracing::info!(request = %q.request_id, "question rejected");
+            let snapshot = manager.lock().await.snapshot().to_string();
+            (Ok(()), Some(snapshot))
+        }
+        Err(e) => {
+            if e != permissions::ReplyError::AlreadySettled {
+                tracing::warn!(request = %q.request_id, error = %e, "question reject failed");
+                manager.lock().await.reinsert_question(q);
+                return (Err(e.to_string()), None);
+            }
+            let (msg, snap) = settled_message(manager, &http, &base, &q.session_id).await;
+            tracing::warn!(request = %q.request_id, "question reject settled upstream");
+            (Err(msg), snap)
+        }
+    }
+}
+
+#[tauri::command]
+async fn reply_question(
+    app: tauri::AppHandle,
+    request_id: String,
+    answers: Vec<Vec<String>>,
+) -> Result<(), String> {
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
+    let (result, snapshot) = answer_question(&manager, &request_id, &answers).await;
+    if let Some(s) = snapshot {
+        publish_snapshot(&app, &s);
+    }
+    result
+}
+
+#[tauri::command]
+async fn reject_question(app: tauri::AppHandle, request_id: String) -> Result<(), String> {
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
+    let (result, snapshot) = reject_question_core(&manager, &request_id).await;
+    if let Some(s) = snapshot {
+        publish_snapshot(&app, &s);
+    }
+    result
 }
 
 /// Publish one snapshot to the UI and mirror it to the status file QML
@@ -129,21 +243,51 @@ fn persist_status(snapshot: &str) {
 /// `neko` with no (recognized) args just focuses the running window.
 #[derive(Debug, PartialEq, Eq)]
 enum CliCommand {
-    ReplyPermission { request_id: String, reply: String },
+    ReplyPermission {
+        request_id: String,
+        reply: String,
+    },
+    ReplyQuestion {
+        request_id: String,
+        answers: Vec<Vec<String>>,
+    },
+    RejectQuestion {
+        request_id: String,
+    },
 }
 
 fn parse_cli_args(args: &[String]) -> Option<CliCommand> {
     let mut it = args.iter().skip(1);
     match it.next().map(String::as_str) {
-        Some("reply") => match (it.next(), it.next(), it.next()) {
-            (Some(kind), Some(id), Some(dec))
-                if kind == "permission"
-                    && it.next().is_none()
-                    && ReplyDecision::parse(dec).is_some() =>
-            {
-                Some(CliCommand::ReplyPermission {
+        Some("reply") => match (it.next(), it.next()) {
+            (Some(kind), Some(id)) if kind == "permission" => match (it.next(), it.next()) {
+                (Some(dec), None) if ReplyDecision::parse(dec).is_some() => {
+                    Some(CliCommand::ReplyPermission {
+                        request_id: id.to_string(),
+                        reply: dec.to_string(),
+                    })
+                }
+                _ => None,
+            },
+            // `reply question <id> <label>…`: single-question shorthand,
+            // answers [[labels…]]. Multi-question sets need the UI.
+            (Some(kind), Some(id)) if kind == "question" => {
+                let labels: Vec<String> = it.map(|s| s.to_string()).collect();
+                if labels.is_empty() {
+                    None
+                } else {
+                    Some(CliCommand::ReplyQuestion {
+                        request_id: id.to_string(),
+                        answers: vec![labels],
+                    })
+                }
+            }
+            _ => None,
+        },
+        Some("reject") => match (it.next(), it.next(), it.next()) {
+            (Some(kind), Some(id), None) if kind == "question" => {
+                Some(CliCommand::RejectQuestion {
                     request_id: id.to_string(),
-                    reply: dec.to_string(),
                 })
             }
             _ => None,
@@ -332,6 +476,9 @@ fn maybe_notify(
                 &format!("{project} · {action} {resource}"),
             );
         }
+        "question.asked" => {
+            notify::send(app, "Question needs an answer", &project);
+        }
         "session.completed" => notify::send(app, "Session completed", &project),
         "session.error" => notify::send(app, "Session error", &project),
         "session.status" => {
@@ -383,8 +530,9 @@ pub fn run() {
         // First: a second launch hands its args to the running instance and
         // exits before setup, so it can never steal the socket, the tray or
         // the global shortcut (previously it panicked on the shortcut).
-        // Recognized CLI (`neko reply permission <id> <decision>`) is
-        // executed here; anything else just focuses the companion window.
+        // Recognized CLI (`neko reply permission …`, `neko reply/reject
+        // question …) is executed here; anything else just focuses the
+        // companion window.
         // Fire-and-forget by design (QML use): verify via the status file.
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             match parse_cli_args(&args) {
@@ -407,6 +555,44 @@ pub fn run() {
                         }
                     });
                 }
+                Some(CliCommand::ReplyQuestion { request_id, answers }) => {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        match app.try_state::<SharedManager>() {
+                            Some(manager) => {
+                                let (result, snapshot) =
+                                    answer_question(&manager, &request_id, &answers).await;
+                                if let Some(s) = snapshot {
+                                    publish_snapshot(&app, &s);
+                                }
+                                match result {
+                                    Ok(()) => tracing::info!(request = %request_id, "cli question ok"),
+                                    Err(e) => tracing::warn!(request = %request_id, error = %e, "cli question failed"),
+                                }
+                            }
+                            None => tracing::warn!("cli question: engine unavailable"),
+                        }
+                    });
+                }
+                Some(CliCommand::RejectQuestion { request_id }) => {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        match app.try_state::<SharedManager>() {
+                            Some(manager) => {
+                                let (result, snapshot) =
+                                    reject_question_core(&manager, &request_id).await;
+                                if let Some(s) = snapshot {
+                                    publish_snapshot(&app, &s);
+                                }
+                                match result {
+                                    Ok(()) => tracing::info!(request = %request_id, "cli reject ok"),
+                                    Err(e) => tracing::warn!(request = %request_id, error = %e, "cli reject failed"),
+                                }
+                            }
+                            None => tracing::warn!("cli reject: engine unavailable"),
+                        }
+                    });
+                }
                 None => {
                     if let Some(w) = app.get_webview_window("companion") {
                         let _ = w.show();
@@ -426,6 +612,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             reply_permission,
+            reply_question,
+            reject_question,
             get_setting,
             set_setting,
             is_autostart,
@@ -631,10 +819,6 @@ mod tests {
         assert_eq!(parse_cli_args(&argv(&["neko", "dance"])), None);
         // Wrong kind, bad decision, or trailing args: ignored.
         assert_eq!(
-            parse_cli_args(&argv(&["neko", "reply", "question", "q_1", "once"])),
-            None
-        );
-        assert_eq!(
             parse_cli_args(&argv(&["neko", "reply", "permission", "per_1", "maybe"])),
             None
         );
@@ -651,6 +835,44 @@ mod tests {
         );
         assert_eq!(
             parse_cli_args(&argv(&["neko", "reply", "permission"])),
+            None
+        );
+    }
+
+    #[test]
+    fn cli_parses_question_forms() {
+        // Single-question shorthand: answers [[labels…]].
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reply", "question", "que_1", "bar-widget"])),
+            Some(CliCommand::ReplyQuestion {
+                request_id: "que_1".to_string(),
+                answers: vec![vec!["bar-widget".to_string()]],
+            })
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reply", "question", "que_1", "a", "b"])),
+            Some(CliCommand::ReplyQuestion {
+                request_id: "que_1".to_string(),
+                answers: vec![vec!["a".to_string(), "b".to_string()]],
+            })
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reject", "question", "que_1"])),
+            Some(CliCommand::RejectQuestion {
+                request_id: "que_1".to_string(),
+            })
+        );
+        // Labels required; reject takes no labels.
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reply", "question", "que_1"])),
+            None
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reject", "question", "que_1", "x"])),
+            None
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reject", "permission", "p"])),
             None
         );
     }

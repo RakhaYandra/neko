@@ -1,7 +1,7 @@
 //! Session registry (Phase 3). Owns the state machine, persistence, and the
 //! UI snapshot. Unknown session IDs are created on demand as `idle`.
 
-use super::permissions::PendingPermission;
+use super::permissions::{PendingPermission, PendingQuestion};
 use super::state::{transition, EventKind, Outcome, SessionStatus};
 use super::storage::{self, SessionRow};
 use sqlx::SqlitePool;
@@ -11,6 +11,7 @@ pub struct SessionManager {
     pool: SqlitePool,
     sessions: HashMap<String, SessionRow>,
     pending: HashMap<String, PendingPermission>,
+    questions: HashMap<String, PendingQuestion>,
 }
 
 impl SessionManager {
@@ -30,8 +31,10 @@ impl SessionManager {
             pool,
             sessions,
             pending: HashMap::new(),
+            questions: HashMap::new(),
         };
         mgr.rehydrate_pending().await;
+        mgr.rehydrate_questions().await;
         Ok(mgr)
     }
 
@@ -56,6 +59,24 @@ impl SessionManager {
                     .await;
                 self.pending.insert(p.request_id.clone(), p);
                 tracing::info!(session = %sid, "pending rehydrated");
+            }
+        }
+    }
+
+    /// Pull live pending questions so a restart doesn't orphan them.
+    /// No serve URL configured (TUI-only) is a silent no-op.
+    pub async fn rehydrate_questions(&mut self) {
+        let Some(base) = super::permissions::serve_url() else {
+            return;
+        };
+        let client = super::permissions::http_client();
+        for q in super::permissions::list_questions(&client, &base).await {
+            let now = storage::now_ms();
+            if self.ensure(&q.session_id, now).await.is_some() {
+                let sid = q.session_id.clone();
+                self.touch(&sid, now).await;
+                self.questions.insert(q.request_id.clone(), q);
+                tracing::info!(session = %sid, "question rehydrated");
             }
         }
     }
@@ -93,6 +114,20 @@ impl SessionManager {
         payload: &serde_json::Value,
     ) -> Option<SessionRow> {
         let sid = session_id?;
+        // Questions ride the session (touch + history) but never touch the
+        // state machine: answering is orthogonal to working/idle/completed.
+        if neko_type == "question.asked" || neko_type == "question.resolved" {
+            let now = storage::now_ms();
+            self.ensure(sid, now).await?;
+            self.touch(sid, now).await;
+            self.record(sid, neko_type, now).await;
+            if neko_type == "question.asked" {
+                self.register_question(sid, payload, now);
+            } else {
+                self.clear_question(sid, payload);
+            }
+            return self.sessions.get(sid).cloned();
+        }
         let kind = event_kind(neko_type, payload)?;
         let now = storage::now_ms();
         let row = self.ensure(sid, now).await?;
@@ -159,6 +194,43 @@ impl SessionManager {
 
     pub fn reinsert_pending(&mut self, p: PendingPermission) {
         self.pending.insert(p.request_id.clone(), p);
+    }
+
+    fn register_question(&mut self, sid: &str, payload: &serde_json::Value, now: i64) {
+        let Some(request_id) = payload.get("requestId").and_then(|v| v.as_str()) else {
+            return; // No reply key: observe-only.
+        };
+        let questions = payload
+            .get("questions")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        self.questions.insert(
+            request_id.to_string(),
+            PendingQuestion {
+                request_id: request_id.to_string(),
+                session_id: sid.to_string(),
+                questions,
+                asked_at_ms: now,
+            },
+        );
+    }
+
+    fn clear_question(&mut self, sid: &str, payload: &serde_json::Value) {
+        if let Some(id) = payload.get("requestId").and_then(|v| v.as_str()) {
+            self.questions.remove(id);
+            return;
+        }
+        self.questions.retain(|_, q| q.session_id != sid);
+    }
+
+    /// Take a pending question for an explicit answer. Same single-shot
+    /// gate as permissions: removal first, re-insert on transport failure.
+    pub fn take_question(&mut self, request_id: &str) -> Option<PendingQuestion> {
+        self.questions.remove(request_id)
+    }
+
+    pub fn reinsert_question(&mut self, q: PendingQuestion) {
+        self.questions.insert(q.request_id.clone(), q);
     }
 
     /// Mark the owning session resolved after a successful reply.
@@ -244,12 +316,26 @@ impl SessionManager {
                 })
             })
             .collect();
+        let mut questions: Vec<&PendingQuestion> = self.questions.values().collect();
+        questions.sort_by_key(|q| q.asked_at_ms);
+        let questions: Vec<serde_json::Value> = questions
+            .iter()
+            .map(|q| {
+                serde_json::json!({
+                    "requestId": q.request_id,
+                    "sessionId": q.session_id,
+                    "questions": q.questions,
+                    "askedAt": q.asked_at_ms,
+                })
+            })
+            .collect();
         serde_json::json!({
             "v": 1,
             "type": "sessions.snapshot",
             "at": storage::now_ms(),
             "sessions": sessions,
             "pending": pending,
+            "questions": questions,
         })
     }
 
@@ -506,6 +592,57 @@ mod tests {
             .unwrap()
             .is_empty());
         assert_eq!(m.sessions.get("a").unwrap().status, SessionStatus::Working);
+    }
+
+    #[tokio::test]
+    async fn question_registry_take_and_snapshot() {
+        let mut m = mem_manager().await;
+        m.apply("session.created", Some("a"), &serde_json::json!({}))
+            .await;
+        // Questions don't move the state machine (stays idle).
+        m.apply(
+            "question.asked",
+            Some("a"),
+            &serde_json::json!({"requestId":"que_1","questions":[{"question":"Which?","options":[{"label":"x"}]}]}),
+        )
+        .await;
+        assert_eq!(m.sessions.get("a").unwrap().status, SessionStatus::Idle);
+        let snap = m.snapshot();
+        let questions = snap.get("questions").unwrap().as_array().unwrap();
+        assert_eq!(questions.len(), 1);
+        assert_eq!(questions[0].get("requestId").unwrap(), "que_1");
+
+        // Single-shot take; second take fails.
+        let q = m.take_question("que_1").unwrap();
+        assert_eq!(q.session_id, "a");
+        assert!(m.take_question("que_1").is_none());
+
+        // Unknown-session asks still land (created on demand).
+        m.apply(
+            "question.asked",
+            Some("ghost"),
+            &serde_json::json!({"requestId":"que_2","questions":[]}),
+        )
+        .await;
+        assert!(m.sessions.get("ghost").is_some());
+
+        // External resolution clears by exact id (ghost entry remains).
+        m.reinsert_question(q);
+        m.apply(
+            "question.resolved",
+            Some("a"),
+            &serde_json::json!({"requestId":"que_1"}),
+        )
+        .await;
+        let questions = m
+            .snapshot()
+            .get("questions")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .clone();
+        assert_eq!(questions.len(), 1);
+        assert_eq!(questions[0].get("requestId").unwrap(), "que_2");
     }
 
     #[tokio::test]
