@@ -93,6 +93,16 @@ requests display "answer in the terminal" instead of buttons. TUI-only sessions
 | `NEKO_DB` | `$XDG_DATA_HOME/neko/neko.db` | SQLite location |
 | `NEKO_OPENCODE_URL` | *(unset)* | OpenCode serve base URL for permission replies |
 
+Every UI snapshot is also mirrored to `$XDG_RUNTIME_DIR/neko-status.json`
+(override with `NEKO_STATUS`) for external readers like bar widgets —
+sessions and pending requests only, no prompts or code.
+
+```sh
+# Answer a permission without the UI (fire-and-forget; check the UI or the
+# status file for the result):
+neko reply permission <requestId> <once|always|deny>
+```
+
 ## Desktop integration
 
 * System tray: session count, show/hide, notification and autostart toggles,

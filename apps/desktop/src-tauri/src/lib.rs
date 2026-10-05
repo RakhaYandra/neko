@@ -19,9 +19,10 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
-/// Answer a pending permission request. The ONLY reply path: explicit UI
-/// click -> strict decision parse -> single registry take -> serve HTTP.
-/// Unknown/settled requests and unreachable serve return Err, never act.
+/// Answer a pending permission request. Two doors, one core: the UI button
+/// (Tauri command) and `neko reply` (single-instance CLI handoff) both run
+/// `answer_permission`. Strict decision parse, single registry take, serve
+/// HTTP. Unknown/settled requests and unreachable serve return Err, never act.
 #[tauri::command]
 async fn reply_permission(
     app: tauri::AppHandle,
@@ -30,20 +31,42 @@ async fn reply_permission(
 ) -> Result<(), String> {
     // Storage may have failed at startup; answer clearly instead of panicking.
     let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
-    let decision = ReplyDecision::parse(&reply).ok_or_else(|| "invalid reply".to_string())?;
-    let base =
-        permissions::serve_url().ok_or_else(|| permissions::ReplyError::NoServeUrl.to_string())?;
+    let (result, snapshot) = answer_permission(&manager, &request_id, &reply).await;
+    if let Some(s) = snapshot {
+        publish_snapshot(&app, &s);
+    }
+    result
+}
+
+/// Shared reply core. Returns the command result plus an optional fresh
+/// snapshot the caller must publish (every settled path resyncs the UI;
+/// only transport failures keep the entry for retry and publish nothing).
+async fn answer_permission(
+    manager: &SharedManager,
+    request_id: &str,
+    reply: &str,
+) -> (Result<(), String>, Option<String>) {
+    let decision = match ReplyDecision::parse(reply) {
+        Some(d) => d,
+        None => return (Err("invalid reply".to_string()), None),
+    };
+    let base = match permissions::serve_url() {
+        Some(b) => b,
+        None => return (Err(permissions::ReplyError::NoServeUrl.to_string()), None),
+    };
     let http = permissions::http_client();
     let pending = {
         let mut m = manager.lock().await;
-        m.take_pending(&request_id)
+        m.take_pending(request_id)
     };
     let Some(p) = pending else {
         // Self-heal: the UI is ahead of the engine. Push the truth so dead
         // buttons vanish instead of persisting until the next event.
         let snapshot = manager.lock().await.snapshot().to_string();
-        let _ = app.emit("neko-event", snapshot);
-        return Err("unknown or already settled (stale view?)".to_string());
+        return (
+            Err("unknown or already settled (stale view?)".to_string()),
+            Some(snapshot),
+        );
     };
     match permissions::reply(&http, &base, &p.request_id, decision).await {
         Ok(()) => {
@@ -53,33 +76,79 @@ async fn reply_permission(
                 m.resolve_local(&p.session_id).await;
                 m.snapshot().to_string()
             };
-            let _ = app.emit("neko-event", snapshot);
-            Ok(())
+            (Ok(()), Some(snapshot))
         }
         Err(e) => {
             // Transport problems: entry restored, UI untouched (retry valid).
             if e != permissions::ReplyError::AlreadySettled {
                 manager.lock().await.reinsert_pending(p);
-                return Err(e.to_string());
+                return (Err(e.to_string()), None);
             }
             // Settled upstream. TUI-origin asks are unknown to serve and can
             // never be answered from Neko — drop and yield to the terminal.
             if !permissions::session_exists(&http, &base, &p.session_id).await {
                 let snapshot = manager.lock().await.snapshot().to_string();
-                let _ = app.emit("neko-event", snapshot);
-                return Err(
-                    "answer in the terminal — this ask comes from a terminal session".to_string(),
+                return (
+                    Err(
+                        "answer in the terminal — this ask comes from a terminal session"
+                            .to_string(),
+                    ),
+                    Some(snapshot),
                 );
             }
             // Known session, request gone (answered elsewhere or silently
             // dropped on interrupt): drop our copy and push the truth so the
             // bubble yields instead of showing dead buttons.
-            {
-                let m = manager.lock().await;
-                let _ = app.emit("neko-event", m.snapshot().to_string());
-            }
-            Err("no longer pending — settled or interrupted elsewhere".to_string())
+            let snapshot = manager.lock().await.snapshot().to_string();
+            (
+                Err("no longer pending — settled or interrupted elsewhere".to_string()),
+                Some(snapshot),
+            )
         }
+    }
+}
+
+/// Publish one snapshot to the UI and mirror it to the status file QML
+/// polls. Emitting and persisting stay paired: every UI truth update is a
+/// widget truth update too.
+fn publish_snapshot(app: &tauri::AppHandle, snapshot: &str) {
+    let _ = app.emit("neko-event", snapshot);
+    persist_status(snapshot);
+}
+
+/// Mirror the latest snapshot for external readers (Omarchy widget).
+/// Best-effort: a failed write is logged, never fatal.
+fn persist_status(snapshot: &str) {
+    let path = ipc::status_path();
+    if let Err(e) = std::fs::write(&path, snapshot) {
+        tracing::warn!(path = %path, error = %e, "status file write failed");
+    }
+}
+
+/// CLI subcommand parsed from second-process argv (single-instance handoff).
+/// `neko` with no (recognized) args just focuses the running window.
+#[derive(Debug, PartialEq, Eq)]
+enum CliCommand {
+    ReplyPermission { request_id: String, reply: String },
+}
+
+fn parse_cli_args(args: &[String]) -> Option<CliCommand> {
+    let mut it = args.iter().skip(1);
+    match it.next().map(String::as_str) {
+        Some("reply") => match (it.next(), it.next(), it.next()) {
+            (Some(kind), Some(id), Some(dec))
+                if kind == "permission"
+                    && it.next().is_none()
+                    && ReplyDecision::parse(dec).is_some() =>
+            {
+                Some(CliCommand::ReplyPermission {
+                    request_id: id.to_string(),
+                    reply: dec.to_string(),
+                })
+            }
+            _ => None,
+        },
+        _ => None,
     }
 }
 
@@ -314,10 +383,36 @@ pub fn run() {
         // First: a second launch hands its args to the running instance and
         // exits before setup, so it can never steal the socket, the tray or
         // the global shortcut (previously it panicked on the shortcut).
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(w) = app.get_webview_window("companion") {
-                let _ = w.show();
-                let _ = w.set_focus();
+        // Recognized CLI (`neko reply permission <id> <decision>`) is
+        // executed here; anything else just focuses the companion window.
+        // Fire-and-forget by design (QML use): verify via the status file.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            match parse_cli_args(&args) {
+                Some(CliCommand::ReplyPermission { request_id, reply }) => {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        match app.try_state::<SharedManager>() {
+                            Some(manager) => {
+                                let (result, snapshot) =
+                                    answer_permission(&manager, &request_id, &reply).await;
+                                if let Some(s) = snapshot {
+                                    publish_snapshot(&app, &s);
+                                }
+                                match result {
+                                    Ok(()) => tracing::info!(request = %request_id, "cli reply ok"),
+                                    Err(e) => tracing::warn!(request = %request_id, error = %e, "cli reply failed"),
+                                }
+                            }
+                            None => tracing::warn!("cli reply: engine unavailable"),
+                        }
+                    });
+                }
+                None => {
+                    if let Some(w) = app.get_webview_window("companion") {
+                        let _ = w.show();
+                        let _ = w.set_focus();
+                    }
+                }
             }
         }))
         .plugin(tauri_plugin_opener::init())
@@ -388,7 +483,7 @@ pub fn run() {
                     if notif_on {
                         maybe_notify(&handle, &t, &payload, project);
                     }
-                    let _ = handle.emit("neko-event", snapshot);
+                    publish_snapshot(&handle, &snapshot);
                     request_tray_rebuild(&tray_deb_consumer, &manager, &handle).await;
                 }
             });
@@ -415,7 +510,7 @@ pub fn run() {
                                     (n, m.snapshot().to_string())
                                 };
                                 if n > 0 {
-                                    let _ = sweep_handle.emit("neko-event", snapshot);
+                                    publish_snapshot(&sweep_handle, &snapshot);
                                     rebuild_tray(&sweep_manager, &sweep_handle).await;
                                 }
                             }
@@ -439,7 +534,7 @@ pub fn run() {
                         // correctly disappear — they are unanswerable now.
                         {
                             let m = manager.lock().await;
-                            let _ = manage_handle.emit("neko-event", m.snapshot().to_string());
+                            publish_snapshot(&manage_handle, &m.snapshot().to_string());
                         }
                     }
                     Err(_) => {
@@ -515,5 +610,63 @@ mod tests {
         assert!(d.should_run(last));
         assert!(!d.should_run(last - 1));
         assert!(!d.should_run(1));
+    }
+
+    fn argv(v: &[&str]) -> Vec<String> {
+        v.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn cli_parses_reply_strictly() {
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reply", "permission", "per_1", "once"])),
+            Some(CliCommand::ReplyPermission {
+                request_id: "per_1".to_string(),
+                reply: "once".to_string(),
+            })
+        );
+        // Bare launch focuses the window.
+        assert_eq!(parse_cli_args(&argv(&["neko"])), None);
+        // Unknown subcommand focuses the window.
+        assert_eq!(parse_cli_args(&argv(&["neko", "dance"])), None);
+        // Wrong kind, bad decision, or trailing args: ignored.
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reply", "question", "q_1", "once"])),
+            None
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reply", "permission", "per_1", "maybe"])),
+            None
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&[
+                "neko",
+                "reply",
+                "permission",
+                "per_1",
+                "once",
+                "x"
+            ])),
+            None
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "reply", "permission"])),
+            None
+        );
+    }
+
+    #[test]
+    fn status_file_mirrors_snapshot() {
+        let path = format!("/tmp/neko-status-test-{}.json", std::process::id());
+        let saved = std::env::var("NEKO_STATUS").ok();
+        std::env::set_var("NEKO_STATUS", &path);
+        persist_status(r#"{"v":1,"type":"sessions.snapshot"}"#);
+        let back = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(back, r#"{"v":1,"type":"sessions.snapshot"}"#);
+        let _ = std::fs::remove_file(&path);
+        match saved {
+            Some(v) => std::env::set_var("NEKO_STATUS", v),
+            None => std::env::remove_var("NEKO_STATUS"),
+        }
     }
 }

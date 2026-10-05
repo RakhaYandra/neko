@@ -25,6 +25,22 @@ pub fn socket_path() -> String {
     "/tmp/neko.sock".to_string()
 }
 
+/// Path of the status file external readers (Omarchy widget) poll.
+/// Same directory as the socket; `NEKO_STATUS` overrides (tests, debugging).
+pub fn status_path() -> String {
+    if let Ok(s) = std::env::var("NEKO_STATUS") {
+        if !s.is_empty() {
+            return s;
+        }
+    }
+    if let Ok(xdg) = std::env::var("XDG_RUNTIME_DIR") {
+        if !xdg.is_empty() {
+            return format!("{xdg}/neko-status.json");
+        }
+    }
+    "/tmp/neko-status.json".to_string()
+}
+
 /// Protocol version we accept. Must match `@neko/protocol` PROTOCOL_VERSION.
 pub const PROTOCOL_VERSION: u8 = 1;
 
