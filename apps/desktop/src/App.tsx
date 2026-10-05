@@ -3,20 +3,22 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { MotionConfig } from "motion/react";
-import { activeSession, useSessions, type NekoSession, type PendingRequest } from "./stores/sessions";
+import { activeSession, useSessions, type NekoSession, type PendingRequest, type PendingQuestion } from "./stores/sessions";
 import { useUi } from "./stores/ui";
 import { Companion } from "./features/companion/Companion";
 import { SessionsList } from "./features/companion/SessionsList";
 import { PermissionBubble, WaitingNotice } from "./features/permissions/PermissionBubble";
+import { QuestionCard } from "./features/questions/QuestionCard";
 import { Settings } from "./features/settings/Settings";
 
 const COMPACT_H = 160;
 const ROW_H = 30;
 const CHROME_H = 118;
 const BUBBLE_H = 190;
+const QUESTION_H = 230;
 const SETTINGS_H = 330;
 
-function isSnapshot(v: unknown): v is { sessions: NekoSession[]; pending?: PendingRequest[] } {
+function isSnapshot(v: unknown): v is { sessions: NekoSession[]; pending?: PendingRequest[]; questions?: PendingQuestion[] } {
   return (
     typeof v === "object" &&
     v !== null &&
@@ -29,6 +31,7 @@ export default function App() {
   const sessions = useSessions((s) => s.sessions);
   const active = useSessions(activeSession);
   const pending = useSessions((s) => s.pending);
+  const questions = useSessions((s) => s.questions);
   const selectedId = useSessions((s) => s.selectedId);
   const select = useSessions((s) => s.select);
   const setSnapshot = useSessions((s) => s.setSnapshot);
@@ -45,7 +48,7 @@ export default function App() {
     listen<string>("neko-event", (e) => {
       try {
         const v: unknown = JSON.parse(e.payload);
-        if (isSnapshot(v)) setSnapshot(v.sessions, v.pending ?? []);
+        if (isSnapshot(v)) setSnapshot(v.sessions, v.pending ?? [], v.questions ?? []);
       } catch {
         // Non-snapshot payloads are ignored by the Phase 6 UI.
       }
@@ -84,6 +87,7 @@ export default function App() {
   }, [setExpanded, setSettingsView]);
 
   const activePending = pending.find((p) => p.sessionId === active?.id) ?? null;
+  const activeQuestion = questions.find((q) => q.sessionId === active?.id) ?? null;
   const waitingNoKey = active?.status === "waiting_permission" && activePending === null;
 
   // Auto-expand when the active session needs the user (master §17).
@@ -91,20 +95,27 @@ export default function App() {
     if (activePending) setExpanded(true);
   }, [activePending?.requestId, setExpanded]);
 
+  useEffect(() => {
+    if (activeQuestion) setExpanded(true);
+  }, [activeQuestion?.requestId, setExpanded]);
+
   // Grow the window when expanded so the list never clips.
   useEffect(() => {
     let h = COMPACT_H;
     if (expanded) {
       h = settingsView
         ? SETTINGS_H
-        : CHROME_H + (activePending || waitingNoKey ? BUBBLE_H : 0) + sessions.length * ROW_H;
+        : CHROME_H +
+          (activePending || waitingNoKey ? BUBBLE_H : 0) +
+          (activeQuestion && !activePending ? QUESTION_H : 0) +
+          sessions.length * ROW_H;
     }
     getCurrentWindow()
       .setSize(new LogicalSize(320, h))
       .catch(() => {
         // Wayland compositors may ignore programmatic resize (ADR-002).
       });
-  }, [expanded, settingsView, sessions.length, activePending, waitingNoKey]);
+  }, [expanded, settingsView, sessions.length, activePending, activeQuestion, waitingNoKey]);
 
   return (
     <MotionConfig reducedMotion={animations ? "user" : "never"}>
@@ -149,6 +160,14 @@ export default function App() {
           />
         )}
         {expanded && !activePending && waitingNoKey && <WaitingNotice />}
+        {expanded && !activePending && activeQuestion && active && (
+          <QuestionCard
+            pending={activeQuestion}
+            project={active.project}
+            onDone={() => setExpanded(false)}
+            onCancel={() => setExpanded(false)}
+          />
+        )}
         {expanded && !settingsView && (
           <SessionsList sessions={sessions} selectedId={selectedId} onSelect={select} />
         )}

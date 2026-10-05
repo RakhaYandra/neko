@@ -38,4 +38,17 @@ describe("sessions store", () => {
     expect(useSessions.getState().pending.map((p) => p.requestId)).toEqual(["per_1"]);
     useSessions.getState().setSnapshot([]);
   });
+
+  it("drops orphan questions for gone sessions", () => {
+    useSessions.getState().setSnapshot(
+      [{ id: "alpha", project: "alpha", status: "working", lastActivityAt: 5 }],
+      [],
+      [
+        { requestId: "que_1", sessionId: "alpha", questions: [], askedAt: 5 },
+        { requestId: "que_2", sessionId: "ghost", questions: [], askedAt: 5 },
+      ],
+    );
+    expect(useSessions.getState().questions.map((q) => q.requestId)).toEqual(["que_1"]);
+    useSessions.getState().setSnapshot([]);
+  });
 });
