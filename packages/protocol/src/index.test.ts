@@ -55,6 +55,26 @@ describe("protocol", () => {
   it("rejects malformed json", () => {
     expect(() => parseMessage("not-json{{{")).toThrow();
   });
+  it("accepts question.asked with options", () => {
+    const m = parseMessage(
+      JSON.stringify({
+        v: 1,
+        type: "question.asked",
+        at: 1,
+        sessionId: "s",
+        payload: {
+          requestId: "que_1",
+          questions: [
+            {
+              question: "Which kind?",
+              options: [{ label: "bar-widget" }, { label: "panel", description: "popup" }],
+            },
+          ],
+        },
+      }),
+    );
+    expect(m.type).toBe("question.asked");
+  });
   it("rejects non-integer / negative at", () => {
     for (const at of [1.5, -1, "now", null]) {
       expect(() =>

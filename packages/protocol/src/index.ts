@@ -81,6 +81,34 @@ export const todoUpdated = base.extend({
   payload: z.object({}),
 });
 
+export const questionOption = z.object({
+  label: z.string(),
+  description: z.string().optional(),
+});
+
+export const questionItem = z.object({
+  question: z.string(),
+  header: z.string().optional(),
+  options: z.array(questionOption),
+  multiple: z.boolean().optional(),
+  custom: z.boolean().optional(),
+});
+
+export const questionAsked = base.extend({
+  type: z.literal("question.asked"),
+  payload: z.object({
+    requestId: z.string().optional(),
+    questions: z.array(questionItem),
+  }),
+});
+
+export const questionResolved = base.extend({
+  type: z.literal("question.resolved"),
+  payload: z.object({
+    requestId: z.string().optional(),
+  }),
+});
+
 export const nekoMessage = z.discriminatedUnion("type", [
   sessionCreated,
   sessionStatus,
@@ -93,6 +121,8 @@ export const nekoMessage = z.discriminatedUnion("type", [
   permissionResolved,
   fileEdited,
   todoUpdated,
+  questionAsked,
+  questionResolved,
 ]);
 
 export type NekoMessage = z.infer<typeof nekoMessage>;

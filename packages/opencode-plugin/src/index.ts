@@ -97,6 +97,9 @@ export const NekoPlugin = async () => {
         "session.diff",
         "permission.asked",
         "permission.replied",
+        "question.asked",
+        "question.replied",
+        "question.rejected",
         "file.edited",
         "todo.updated",
       ];
@@ -135,6 +138,31 @@ export const NekoPlugin = async () => {
         await send("permission.resolved", sessionId, {
           ...(action ? { action } : {}),
           decision: normalizeDecision(p.response ?? p.reply),
+          ...(requestId ? { requestId } : {}),
+        });
+      } else if (event.type === "question.asked") {
+        const requestId = requestIdOf(p);
+        const questions = Array.isArray(p.questions)
+          ? p.questions.map((q: any) => ({
+              question: String(q?.question ?? "unknown"),
+              ...(q?.header != null ? { header: String(q.header) } : {}),
+              options: Array.isArray(q?.options)
+                ? q.options.map((o: any) => ({
+                    label: String(o?.label ?? "unknown"),
+                    ...(o?.description != null ? { description: String(o.description) } : {}),
+                  }))
+                : [],
+              ...(q?.multiple != null ? { multiple: Boolean(q.multiple) } : {}),
+              ...(q?.custom != null ? { custom: Boolean(q.custom) } : {}),
+            }))
+          : [];
+        await send("question.asked", sessionId, {
+          ...(requestId ? { requestId } : {}),
+          questions,
+        });
+      } else if (event.type === "question.replied" || event.type === "question.rejected") {
+        const requestId = requestIdOf(p);
+        await send("question.resolved", sessionId, {
           ...(requestId ? { requestId } : {}),
         });
       } else if (event.type === "file.edited") {

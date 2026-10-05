@@ -190,3 +190,30 @@ test("event hook adapts error, diff, replied, file, todo", async () => {
   assert.equal(byType("todo.updated").type, "todo.updated");
   assert.equal(byType("tool.completed").type, "tool.completed");
 });
+
+test("question.asked forwards options, replied/rejected resolve", async () => {
+  const hooks = await NekoPlugin({});
+  await hooks.event({
+    event: {
+      type: "question.asked",
+      properties: {
+        id: "que_1",
+        sessionID: "s",
+        questions: [
+          { question: "Which kind?", options: [{ label: "bar-widget" }, { label: "panel" }] },
+        ],
+      },
+    },
+  });
+  await waitFor(1);
+  const q = last();
+  assert.equal(q.type, "question.asked");
+  assert.equal(q.payload.requestId, "que_1");
+  assert.deepEqual(q.payload.questions[0].options.map((o) => o.label), ["bar-widget", "panel"]);
+  await hooks.event({
+    event: { type: "question.replied", properties: { requestID: "que_1", sessionID: "s" } },
+  });
+  await waitFor(2);
+  assert.equal(last().type, "question.resolved");
+  assert.equal(last().payload.requestId, "que_1");
+});
