@@ -124,9 +124,9 @@ export default function App() {
           if (e.key === "Escape") setExpanded(false);
         }}
         style={{
-          fontFamily: "sans-serif",
+          fontFamily: "'JetBrains Mono', 'ui-monospace', 'monospace'",
           padding: 14,
-          color: "#fff",
+          color: "#c9d1d9",
           background: `rgba(13,17,23,${opacity})`,
           borderRadius: 14,
           border: "1px solid #30363d",
