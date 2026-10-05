@@ -302,6 +302,72 @@ fn parse_cli_args(args: &[String]) -> Option<CliCommand> {
     }
 }
 
+/// Execute one CLI command inside the running instance. Used by the
+/// single-instance handoff (second process) and by first-instance startup,
+/// so `neko <cli>` works whether or not the app was already running.
+async fn handle_cli(app: &tauri::AppHandle, cmd: CliCommand) {
+    let manager = app.try_state::<SharedManager>().map(|s| (*s).clone());
+    match cmd {
+        CliCommand::ReplyPermission { request_id, reply } => {
+            let Some(m) = manager else {
+                tracing::warn!("cli reply: engine unavailable");
+                return;
+            };
+            let (result, snapshot) = answer_permission(&m, &request_id, &reply).await;
+            if let Some(s) = snapshot {
+                publish_snapshot(app, &s);
+            }
+            match result {
+                Ok(()) => tracing::info!(request = %request_id, "cli reply ok"),
+                Err(e) => tracing::warn!(request = %request_id, error = %e, "cli reply failed"),
+            }
+        }
+        CliCommand::ReplyQuestion {
+            request_id,
+            answers,
+        } => {
+            let Some(m) = manager else {
+                tracing::warn!("cli question: engine unavailable");
+                return;
+            };
+            let (result, snapshot) = answer_question(&m, &request_id, &answers).await;
+            if let Some(s) = snapshot {
+                publish_snapshot(app, &s);
+            }
+            match result {
+                Ok(()) => tracing::info!(request = %request_id, "cli question ok"),
+                Err(e) => tracing::warn!(request = %request_id, error = %e, "cli question failed"),
+            }
+        }
+        CliCommand::RejectQuestion { request_id } => {
+            let Some(m) = manager else {
+                tracing::warn!("cli reject: engine unavailable");
+                return;
+            };
+            let (result, snapshot) = reject_question_core(&m, &request_id).await;
+            if let Some(s) = snapshot {
+                publish_snapshot(app, &s);
+            }
+            match result {
+                Ok(()) => tracing::info!(request = %request_id, "cli reject ok"),
+                Err(e) => tracing::warn!(request = %request_id, error = %e, "cli reject failed"),
+            }
+        }
+        CliCommand::ShowCompanion => {
+            apply_companion_visible(app, manager, Some(true)).await;
+            tracing::info!("cli show ok");
+        }
+        CliCommand::HideCompanion => {
+            apply_companion_visible(app, manager, Some(false)).await;
+            tracing::info!("cli hide ok");
+        }
+        CliCommand::ToggleCompanion => {
+            apply_companion_visible(app, manager, None).await;
+            tracing::info!("cli toggle ok");
+        }
+    }
+}
+
 #[tauri::command]
 async fn get_setting(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
     let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
@@ -574,103 +640,22 @@ pub fn run() {
         // question …) is executed here; anything else just focuses the
         // companion window.
         // Fire-and-forget by design (QML use): verify via the status file.
+        // Shared with first-instance startup below: `neko <cli>` always
+        // works, whether or not the app was already running.
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             match parse_cli_args(&args) {
-                Some(CliCommand::ReplyPermission { request_id, reply }) => {
+                Some(cmd) => {
                     let app = app.clone();
                     tauri::async_runtime::spawn(async move {
-                        match app.try_state::<SharedManager>() {
-                            Some(manager) => {
-                                let (result, snapshot) =
-                                    answer_permission(&manager, &request_id, &reply).await;
-                                if let Some(s) = snapshot {
-                                    publish_snapshot(&app, &s);
-                                }
-                                match result {
-                                    Ok(()) => tracing::info!(request = %request_id, "cli reply ok"),
-                                    Err(e) => tracing::warn!(request = %request_id, error = %e, "cli reply failed"),
-                                }
-                            }
-                            None => tracing::warn!("cli reply: engine unavailable"),
-                        }
-                    });
-                }
-                Some(CliCommand::ReplyQuestion { request_id, answers }) => {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        match app.try_state::<SharedManager>() {
-                            Some(manager) => {
-                                let (result, snapshot) =
-                                    answer_question(&manager, &request_id, &answers).await;
-                                if let Some(s) = snapshot {
-                                    publish_snapshot(&app, &s);
-                                }
-                                match result {
-                                    Ok(()) => tracing::info!(request = %request_id, "cli question ok"),
-                                    Err(e) => tracing::warn!(request = %request_id, error = %e, "cli question failed"),
-                                }
-                            }
-                            None => tracing::warn!("cli question: engine unavailable"),
-                        }
-                    });
-                }
-                Some(CliCommand::RejectQuestion { request_id }) => {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        match app.try_state::<SharedManager>() {
-                            Some(manager) => {
-                                let (result, snapshot) =
-                                    reject_question_core(&manager, &request_id).await;
-                                if let Some(s) = snapshot {
-                                    publish_snapshot(&app, &s);
-                                }
-                                match result {
-                                    Ok(()) => tracing::info!(request = %request_id, "cli reject ok"),
-                                    Err(e) => tracing::warn!(request = %request_id, error = %e, "cli reject failed"),
-                                }
-                            }
-                            None => tracing::warn!("cli reject: engine unavailable"),
-                        }
+                        handle_cli(&app, cmd).await;
                     });
                 }
                 None => {
                     // Explicit summon: show, focus, and persist visible.
                     let app = app.clone();
                     tauri::async_runtime::spawn(async move {
-                        let manager = app
-                            .try_state::<SharedManager>()
-                            .map(|s| (*s).clone());
+                        let manager = app.try_state::<SharedManager>().map(|s| (*s).clone());
                         apply_companion_visible(&app, manager, Some(true)).await;
-                    });
-                }
-                Some(CliCommand::ShowCompanion) => {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        let manager = app
-                            .try_state::<SharedManager>()
-                            .map(|s| (*s).clone());
-                        apply_companion_visible(&app, manager, Some(true)).await;
-                        tracing::info!("cli show ok");
-                    });
-                }
-                Some(CliCommand::HideCompanion) => {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        let manager = app
-                            .try_state::<SharedManager>()
-                            .map(|s| (*s).clone());
-                        apply_companion_visible(&app, manager, Some(false)).await;
-                        tracing::info!("cli hide ok");
-                    });
-                }
-                Some(CliCommand::ToggleCompanion) => {
-                    let app = app.clone();
-                    tauri::async_runtime::spawn(async move {
-                        let manager = app
-                            .try_state::<SharedManager>()
-                            .map(|s| (*s).clone());
-                        apply_companion_visible(&app, manager, None).await;
-                        tracing::info!("cli toggle ok");
                     });
                 }
             }
@@ -807,12 +792,19 @@ pub fn run() {
                             if !companion_visible_default(
                                 storage_get(&pool, "companion_visible").await,
                             ) {
-                                if let Some(w) =
-                                    manage_handle.get_webview_window("companion")
-                                {
+                                if let Some(w) = manage_handle.get_webview_window("companion") {
                                     let _ = w.hide();
                                 }
                             }
+                        }
+                        // First-instance CLI: `neko <cli>` with no app running
+                        // lands here (no second process to forward from), so
+                        // execute our own argv once the engine is ready.
+                        if let Some(cmd) = parse_cli_args(&std::env::args().collect::<Vec<_>>()) {
+                            let h = manage_handle.clone();
+                            tauri::async_runtime::spawn(async move {
+                                handle_cli(&h, cmd).await;
+                            });
                         }
                     }
                     Err(_) => {
