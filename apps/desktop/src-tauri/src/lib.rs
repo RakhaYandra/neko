@@ -39,7 +39,11 @@ async fn reply_permission(
         m.take_pending(&request_id)
     };
     let Some(p) = pending else {
-        return Err("unknown or already settled".to_string());
+        // Self-heal: the UI is ahead of the engine. Push the truth so dead
+        // buttons vanish instead of persisting until the next event.
+        let snapshot = manager.lock().await.snapshot().to_string();
+        let _ = app.emit("neko-event", snapshot);
+        return Err("unknown or already settled (stale view?)".to_string());
     };
     match permissions::reply(&http, &base, &p.request_id, decision).await {
         Ok(()) => {
@@ -53,11 +57,28 @@ async fn reply_permission(
             Ok(())
         }
         Err(e) => {
-            // Upstream untouched or still pending: restore so UI can retry.
+            // Transport problems: entry restored, UI untouched (retry valid).
             if e != permissions::ReplyError::AlreadySettled {
                 manager.lock().await.reinsert_pending(p);
+                return Err(e.to_string());
             }
-            Err(e.to_string())
+            // Settled upstream. TUI-origin asks are unknown to serve and can
+            // never be answered from Neko — drop and yield to the terminal.
+            if !permissions::session_exists(&http, &base, &p.session_id).await {
+                let snapshot = manager.lock().await.snapshot().to_string();
+                let _ = app.emit("neko-event", snapshot);
+                return Err(
+                    "answer in the terminal — this ask comes from a terminal session".to_string(),
+                );
+            }
+            // Known session, request gone (answered elsewhere or silently
+            // dropped on interrupt): drop our copy and push the truth so the
+            // bubble yields instead of showing dead buttons.
+            {
+                let m = manager.lock().await;
+                let _ = app.emit("neko-event", m.snapshot().to_string());
+            }
+            Err("no longer pending — settled or interrupted elsewhere".to_string())
         }
     }
 }
@@ -410,7 +431,16 @@ pub fn run() {
                                 toggle_setting(&m, &h, id.trim_matches('"')).await;
                             });
                         });
-                        manage_handle.manage(manager);
+                        manage_handle.manage(manager.clone());
+                        // Fresh full snapshot on startup: any UI holding stale
+                        // state (surviving frontend, second window) resyncs
+                        // immediately instead of showing dead buttons until
+                        // the next event. TUI-origin pendings lost on restart
+                        // correctly disappear — they are unanswerable now.
+                        {
+                            let m = manager.lock().await;
+                            let _ = manage_handle.emit("neko-event", m.snapshot().to_string());
+                        }
                     }
                     Err(_) => {
                         tracing::error!("session engine unavailable: storage failed to start");

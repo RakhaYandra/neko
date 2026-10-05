@@ -110,6 +110,18 @@ pub async fn reply(
     )))
 }
 
+/// Does serve know this session? Used on the 404-reply path to tell a
+/// terminal-answered serve ask apart from a TUI-origin ask (which serve can
+/// never answer). Unreachable serve reads as known (conservative: keep the
+/// old message and the retry entry).
+pub async fn session_exists(client: &reqwest::Client, base_url: &str, session_id: &str) -> bool {
+    let url = format!("{}/session/{session_id}", base_url.trim_end_matches('/'));
+    match client.get(&url).send().await {
+        Ok(r) => r.status().is_success(),
+        Err(_) => true,
+    }
+}
+
 fn trim_err(s: String) -> String {
     let mut s = s;
     s.truncate(160);
@@ -205,6 +217,17 @@ mod tests {
             reply(&client, &base, "per_x", ReplyDecision::Deny).await,
             Err(ReplyError::AlreadySettled)
         );
+    }
+
+    #[tokio::test]
+    async fn session_exists_maps_status() {
+        let client = http_client();
+        let base = respond_once("200 OK", b"{}").await;
+        assert!(session_exists(&client, &base, "ses_1").await);
+        let base = respond_once("404 Not Found", b"nope").await;
+        assert!(!session_exists(&client, &base, "ses_x").await);
+        // Unreachable reads as known (conservative: keep old message).
+        assert!(session_exists(&client, "http://127.0.0.1:1", "ses_1").await);
     }
 
     #[tokio::test]
