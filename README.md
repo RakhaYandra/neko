@@ -2,6 +2,9 @@
 
 > Your little OpenCode companion for Linux.
 
+For Hyprland/Omarchy: [`omarchy-neko`](https://github.com/RakhaYandra/omarchy-neko)
+shows Neko as a bar widget (needs the Neko binary on `PATH`).
+
 A local-first desktop companion that reflects [OpenCode](https://opencode.ai)
 session state — working, waiting for permission, completed, error — so you do
 not have to switch back to the terminal to find out what is happening.
