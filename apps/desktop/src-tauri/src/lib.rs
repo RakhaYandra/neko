@@ -290,6 +290,15 @@ pub fn run() {
         }
     };
     tauri::Builder::default()
+        // First: a second launch hands its args to the running instance and
+        // exits before setup, so it can never steal the socket, the tray or
+        // the global shortcut (previously it panicked on the shortcut).
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("companion") {
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(
