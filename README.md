@@ -106,6 +106,14 @@ sessions and pending requests only, no prompts or code.
 neko reply permission <requestId> <once|always|deny>
 ```
 
+## Bar-only mode
+
+Neko starts with the companion window hidden: sessions live in the bar
+widget and the tray, and asks arrive as notifications. Summon the window
+from the tray, with `Super+Alt+N`, via the widget, with `neko show`, or by
+launching Neko again. Toggle it in Settings (“Show companion window”) or
+with `neko hide` / `neko toggle`.
+
 ## Desktop integration
 
 * System tray: session count, show/hide, notification and autostart toggles,

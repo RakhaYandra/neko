@@ -84,6 +84,7 @@ export function Settings() {
   const [notif, setNotif] = useState(true);
   const [onTop, setOnTop] = useState(true);
   const [auto, setAuto] = useState(false);
+  const [companion, setCompanion] = useState(false);
   const animations = useUi((s) => s.animations);
   const setAnimations = useUi((s) => s.setAnimations);
   const opacity = useUi((s) => s.opacity);
@@ -95,6 +96,7 @@ export function Settings() {
     void (async () => {
       if ((await get("notifications")) === "0" && mounted) setNotif(false);
       if ((await get("always_on_top")) === "0" && mounted) setOnTop(false);
+      if ((await get("companion_visible")) === "1" && mounted) setCompanion(true);
       const anim = await get("animations");
       if (anim !== null && mounted) setAnimations(anim !== "0");
       const op = await get("opacity");
@@ -130,6 +132,17 @@ export function Settings() {
       await invoke("set_always_on_top", { enabled: next });
     } catch {
       setOnTop(prev);
+    }
+  }
+
+  async function flipCompanion() {
+    const prev = companion;
+    const next = !prev;
+    setCompanion(next);
+    try {
+      await invoke("set_companion_visible", { enabled: next });
+    } catch {
+      setCompanion(prev);
     }
   }
 
@@ -183,7 +196,8 @@ export function Settings() {
           ✕
         </button>
       </div>
-      <Row label="Notifications" hint="Permission, completed, error" control={<Toggle label="Notifications" on={notif} onFlip={() => void flipNotif()} />} />
+      <Row label="Notifications" hint="Permission, completed, error, question" control={<Toggle label="Notifications" on={notif} onFlip={() => void flipNotif()} />} />
+      <Row label="Companion window" hint="Off = bar-only mode" control={<Toggle label="Companion window" on={companion} onFlip={() => void flipCompanion()} />} />
       <Row label="Always on top" control={<Toggle label="Always on top" on={onTop} onFlip={() => void flipOnTop()} />} />
       <Row label="Start on login" control={<Toggle label="Start on login" on={auto} onFlip={() => void flipAuto()} />} />
       <Row label="Animations" control={<Toggle label="Animations" on={animations} onFlip={() => void flipAnimations()} />} />

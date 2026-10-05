@@ -41,6 +41,26 @@ describe("Settings", () => {
     expect(screen.getByLabelText("Notifications")).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("companion toggle defaults off and invokes command", async () => {
+    invokeMock.mockImplementation(async (cmd: string, args?: { key?: string }) => {
+      if (cmd === "get_setting") return args?.key === "companion_visible" ? "0" : "1";
+      if (cmd === "is_autostart") return false;
+      return undefined;
+    });
+    render(<Settings />);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    const toggle = screen.getByLabelText("Companion window");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(invokeMock).toHaveBeenCalledWith("set_companion_visible", { enabled: true });
+    expect(screen.getByLabelText("Companion window")).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("debounces opacity slider persistence", async () => {
     render(<Settings />);
     await act(async () => {

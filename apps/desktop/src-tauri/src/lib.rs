@@ -254,6 +254,9 @@ enum CliCommand {
     RejectQuestion {
         request_id: String,
     },
+    ShowCompanion,
+    HideCompanion,
+    ToggleCompanion,
 }
 
 fn parse_cli_args(args: &[String]) -> Option<CliCommand> {
@@ -292,6 +295,9 @@ fn parse_cli_args(args: &[String]) -> Option<CliCommand> {
             }
             _ => None,
         },
+        Some("show") if it.next().is_none() => Some(CliCommand::ShowCompanion),
+        Some("hide") if it.next().is_none() => Some(CliCommand::HideCompanion),
+        Some("toggle") if it.next().is_none() => Some(CliCommand::ToggleCompanion),
         _ => None,
     }
 }
@@ -378,18 +384,52 @@ fn place_top_center(app: &tauri::AppHandle) -> tauri::Result<()> {
 }
 
 fn toggle_companion(app: &tauri::AppHandle) {
-    let Some(w) = app.get_webview_window("companion") else {
-        return;
-    };
-    match w.is_visible() {
-        Ok(true) => {
-            let _ = w.hide();
-        }
-        _ => {
+    let h = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let manager = h.try_state::<SharedManager>().map(|s| (*s).clone());
+        apply_companion_visible(&h, manager, None).await;
+    });
+}
+
+/// Startup default for bar-only mode: hidden unless explicitly enabled.
+fn companion_visible_default(setting: Option<String>) -> bool {
+    setting.as_deref() == Some("1")
+}
+
+/// Single owner of companion visibility: every show/hide path funnels here
+/// so the persisted setting never drifts from the window.
+/// `show`: Some sets, None toggles. Without a manager the window still
+/// moves but nothing persists (engine down).
+async fn apply_companion_visible(
+    app: &tauri::AppHandle,
+    manager: Option<SharedManager>,
+    show: Option<bool>,
+) {
+    let show = show.unwrap_or_else(|| {
+        app.get_webview_window("companion")
+            .and_then(|w| w.is_visible().ok())
+            .map(|v| !v)
+            .unwrap_or(true)
+    });
+    if let Some(m) = &manager {
+        let pool = { m.lock().await.pool() };
+        storage_set(&pool, "companion_visible", if show { "1" } else { "0" }).await;
+    }
+    if let Some(w) = app.get_webview_window("companion") {
+        if show {
             let _ = w.show();
             let _ = w.set_focus();
+        } else {
+            let _ = w.hide();
         }
     }
+}
+
+#[tauri::command]
+async fn set_companion_visible(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
+    apply_companion_visible(&app, Some((*manager).clone()), Some(enabled)).await;
+    Ok(())
 }
 
 async fn tray_state(manager: &SharedManager, app: &tauri::AppHandle) -> tray::TrayState {
@@ -594,10 +634,44 @@ pub fn run() {
                     });
                 }
                 None => {
-                    if let Some(w) = app.get_webview_window("companion") {
-                        let _ = w.show();
-                        let _ = w.set_focus();
-                    }
+                    // Explicit summon: show, focus, and persist visible.
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let manager = app
+                            .try_state::<SharedManager>()
+                            .map(|s| (*s).clone());
+                        apply_companion_visible(&app, manager, Some(true)).await;
+                    });
+                }
+                Some(CliCommand::ShowCompanion) => {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let manager = app
+                            .try_state::<SharedManager>()
+                            .map(|s| (*s).clone());
+                        apply_companion_visible(&app, manager, Some(true)).await;
+                        tracing::info!("cli show ok");
+                    });
+                }
+                Some(CliCommand::HideCompanion) => {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let manager = app
+                            .try_state::<SharedManager>()
+                            .map(|s| (*s).clone());
+                        apply_companion_visible(&app, manager, Some(false)).await;
+                        tracing::info!("cli hide ok");
+                    });
+                }
+                Some(CliCommand::ToggleCompanion) => {
+                    let app = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let manager = app
+                            .try_state::<SharedManager>()
+                            .map(|s| (*s).clone());
+                        apply_companion_visible(&app, manager, None).await;
+                        tracing::info!("cli toggle ok");
+                    });
                 }
             }
         }))
@@ -614,6 +688,7 @@ pub fn run() {
             reply_permission,
             reply_question,
             reject_question,
+            set_companion_visible,
             get_setting,
             set_setting,
             is_autostart,
@@ -724,6 +799,21 @@ pub fn run() {
                             let m = manager.lock().await;
                             publish_snapshot(&manage_handle, &m.snapshot().to_string());
                         }
+                        // Bar-only mode: start hidden unless explicitly
+                        // enabled. Summon via tray, shortcut, widget, CLI, or
+                        // a second launch; asks arrive via notification.
+                        {
+                            let pool = { manager.lock().await.pool() };
+                            if !companion_visible_default(
+                                storage_get(&pool, "companion_visible").await,
+                            ) {
+                                if let Some(w) =
+                                    manage_handle.get_webview_window("companion")
+                                {
+                                    let _ = w.hide();
+                                }
+                            }
+                        }
                     }
                     Err(_) => {
                         tracing::error!("session engine unavailable: storage failed to start");
@@ -751,7 +841,7 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-/// Tray check-menu toggles (notifications / autostart).
+/// Tray check-menu toggles (notifications / autostart / companion window).
 async fn toggle_setting(manager: &SharedManager, app: &tauri::AppHandle, id: &str) {
     use tauri_plugin_autostart::ManagerExt;
     match id {
@@ -778,6 +868,9 @@ async fn toggle_setting(manager: &SharedManager, app: &tauri::AppHandle, id: &st
                 tracing::warn!(error = %e, "autostart toggle failed");
             }
             rebuild_tray(manager, app).await;
+        }
+        "toggle_win" => {
+            apply_companion_visible(app, Some(manager.clone()), None).await;
         }
         _ => {}
     }
@@ -875,6 +968,32 @@ mod tests {
             parse_cli_args(&argv(&["neko", "reject", "permission", "p"])),
             None
         );
+    }
+
+    #[test]
+    fn companion_hidden_unless_enabled() {
+        assert!(!companion_visible_default(None));
+        assert!(companion_visible_default(Some("1".to_string())));
+        assert!(!companion_visible_default(Some("0".to_string())));
+        assert!(!companion_visible_default(Some(String::new())));
+    }
+
+    #[test]
+    fn cli_parses_visibility_forms() {
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "show"])),
+            Some(CliCommand::ShowCompanion)
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "hide"])),
+            Some(CliCommand::HideCompanion)
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "toggle"])),
+            Some(CliCommand::ToggleCompanion)
+        );
+        assert_eq!(parse_cli_args(&argv(&["neko", "show", "x"])), None);
+        assert_eq!(parse_cli_args(&argv(&["neko", "hide", "x"])), None);
     }
 
     #[test]

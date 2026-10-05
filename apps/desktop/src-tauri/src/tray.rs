@@ -79,7 +79,9 @@ pub fn build(app: &AppHandle, s: &TrayState) -> tauri::Result<()> {
                 ..
             } = event
             {
-                toggle_window(tray.app_handle());
+                // Funneled through the single visibility owner in lib.rs
+                // (persists the setting); see toggle_setting.
+                let _ = tray.app_handle().emit("neko-tray", "toggle_win");
             }
         })
         .build(app)?;
@@ -88,19 +90,6 @@ pub fn build(app: &AppHandle, s: &TrayState) -> tauri::Result<()> {
 
 fn companion(app: &AppHandle) -> Option<tauri::WebviewWindow> {
     app.get_webview_window("companion")
-}
-
-fn toggle_window(app: &AppHandle) {
-    let Some(w) = companion(app) else { return };
-    match w.is_visible() {
-        Ok(true) => {
-            let _ = w.hide();
-        }
-        _ => {
-            let _ = w.show();
-            let _ = w.set_focus();
-        }
-    }
 }
 
 fn on_menu(app: &AppHandle, id: &str) {
@@ -112,7 +101,9 @@ fn on_menu(app: &AppHandle, id: &str) {
             }
             let _ = app.emit("neko-ui", "expand");
         }
-        "toggle_win" => toggle_window(app),
+        "toggle_win" => {
+            let _ = app.emit("neko-tray", "toggle_win");
+        }
         "settings" => {
             if let Some(w) = companion(app) {
                 let _ = w.show();
