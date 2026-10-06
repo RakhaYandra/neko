@@ -12,6 +12,7 @@ pub struct SessionManager {
     sessions: HashMap<String, SessionRow>,
     pending: HashMap<String, PendingPermission>,
     questions: HashMap<String, PendingQuestion>,
+    last_export: Option<String>,
 }
 
 impl SessionManager {
@@ -32,6 +33,7 @@ impl SessionManager {
             sessions,
             pending: HashMap::new(),
             questions: HashMap::new(),
+            last_export: None,
         };
         mgr.rehydrate_pending().await;
         mgr.rehydrate_questions().await;
@@ -281,6 +283,11 @@ impl SessionManager {
         self.pool.clone()
     }
 
+    /// Remember the last export path (surfaced in the snapshot for widgets).
+    pub fn note_export(&mut self, path: String) {
+        self.last_export = Some(path);
+    }
+
     pub async fn setting_set(&self, key: &str, value: &str) {
         let _ = storage::set_setting(&self.pool, key, value).await;
     }
@@ -336,6 +343,7 @@ impl SessionManager {
             "sessions": sessions,
             "pending": pending,
             "questions": questions,
+            "lastExport": self.last_export,
         })
     }
 

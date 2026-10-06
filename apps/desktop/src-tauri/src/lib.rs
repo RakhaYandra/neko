@@ -222,6 +222,53 @@ async fn reject_question(app: tauri::AppHandle, request_id: String) -> Result<()
     result
 }
 
+/// Delete all terminal sessions (explicit Clear action). Returns
+/// (sessions, events) removed. Active sessions are untouched.
+#[tauri::command]
+async fn clear_disconnected(app: tauri::AppHandle) -> Result<(u64, u64), String> {
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
+    let pool = { manager.lock().await.pool() };
+    let removed = sessions::storage::clear_disconnected(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    let snapshot = manager.lock().await.snapshot().to_string();
+    publish_snapshot(&app, &snapshot);
+    Ok(removed)
+}
+
+/// Stable export path (single file, overwritten per export).
+fn export_path() -> String {
+    let base = std::env::var("XDG_DATA_HOME").unwrap_or_else(|_| {
+        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+        format!("{home}/.local/share")
+    });
+    format!("{base}/neko/neko-export.json")
+}
+
+fn export_snapshot_to(path: &str, snapshot: &str) -> std::io::Result<()> {
+    if let Some(parent) = std::path::Path::new(path).parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, snapshot)
+}
+
+/// Write the current snapshot to the export file. Returns the path.
+/// Widgets read it back via `lastExport` in later snapshots.
+#[tauri::command]
+async fn export_snapshot(app: tauri::AppHandle) -> Result<String, String> {
+    let manager = app.try_state::<SharedManager>().ok_or(ENGINE_DOWN)?;
+    let snapshot = manager.lock().await.snapshot().to_string();
+    let path = export_path();
+    export_snapshot_to(&path, &snapshot).map_err(|e| e.to_string())?;
+    {
+        let mut m = manager.lock().await;
+        m.note_export(path.clone());
+    }
+    let snapshot = manager.lock().await.snapshot().to_string();
+    publish_snapshot(&app, &snapshot);
+    Ok(path)
+}
+
 /// Publish one snapshot to the UI and mirror it to the status file QML
 /// polls. Emitting and persisting stay paired: every UI truth update is a
 /// widget truth update too.
@@ -257,6 +304,8 @@ enum CliCommand {
     ShowCompanion,
     HideCompanion,
     ToggleCompanion,
+    ClearDisconnected,
+    ExportSnapshot,
 }
 
 fn parse_cli_args(args: &[String]) -> Option<CliCommand> {
@@ -298,6 +347,8 @@ fn parse_cli_args(args: &[String]) -> Option<CliCommand> {
         Some("show") if it.next().is_none() => Some(CliCommand::ShowCompanion),
         Some("hide") if it.next().is_none() => Some(CliCommand::HideCompanion),
         Some("toggle") if it.next().is_none() => Some(CliCommand::ToggleCompanion),
+        Some("clear") if it.next().is_none() => Some(CliCommand::ClearDisconnected),
+        Some("export") if it.next().is_none() => Some(CliCommand::ExportSnapshot),
         _ => None,
     }
 }
@@ -364,6 +415,41 @@ async fn handle_cli(app: &tauri::AppHandle, cmd: CliCommand) {
         CliCommand::ToggleCompanion => {
             apply_companion_visible(app, manager, None).await;
             tracing::info!("cli toggle ok");
+        }
+        CliCommand::ClearDisconnected => {
+            let Some(m) = manager else {
+                tracing::warn!("cli clear: engine unavailable");
+                return;
+            };
+            let pool = { m.lock().await.pool() };
+            match sessions::storage::clear_disconnected(&pool).await {
+                Ok((se, ev)) => {
+                    let snapshot = m.lock().await.snapshot().to_string();
+                    publish_snapshot(app, &snapshot);
+                    tracing::info!(sessions = se, events = ev, "cli clear ok");
+                }
+                Err(e) => tracing::warn!(error = %e, "cli clear failed"),
+            }
+        }
+        CliCommand::ExportSnapshot => {
+            let Some(m) = manager else {
+                tracing::warn!("cli export: engine unavailable");
+                return;
+            };
+            let snapshot = m.lock().await.snapshot().to_string();
+            let path = export_path();
+            match export_snapshot_to(&path, &snapshot) {
+                Ok(()) => {
+                    m.lock().await.note_export(path.clone());
+                    let snapshot = m.lock().await.snapshot().to_string();
+                    publish_snapshot(app, &snapshot);
+                    // Printed only when executed locally (first instance);
+                    // forwarded calls verify via the status file instead.
+                    println!("{path}");
+                    tracing::info!(path = %path, "cli export ok");
+                }
+                Err(e) => tracing::warn!(error = %e, "cli export failed"),
+            }
         }
     }
 }
@@ -674,6 +760,8 @@ pub fn run() {
             reply_question,
             reject_question,
             set_companion_visible,
+            clear_disconnected,
+            export_snapshot,
             get_setting,
             set_setting,
             is_autostart,
@@ -986,6 +1074,29 @@ mod tests {
         );
         assert_eq!(parse_cli_args(&argv(&["neko", "show", "x"])), None);
         assert_eq!(parse_cli_args(&argv(&["neko", "hide", "x"])), None);
+    }
+
+    #[test]
+    fn cli_parses_clear_export_forms() {
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "clear"])),
+            Some(CliCommand::ClearDisconnected)
+        );
+        assert_eq!(
+            parse_cli_args(&argv(&["neko", "export"])),
+            Some(CliCommand::ExportSnapshot)
+        );
+        assert_eq!(parse_cli_args(&argv(&["neko", "clear", "x"])), None);
+        assert_eq!(parse_cli_args(&argv(&["neko", "export", "x"])), None);
+    }
+
+    #[test]
+    fn export_writes_snapshot_to_path() {
+        let dir = format!("/tmp/neko-export-test-{}", std::process::id());
+        let path = format!("{dir}/neko-export.json");
+        export_snapshot_to(&path, r#"{"v":1}"#).unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), r#"{"v":1}"#);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
