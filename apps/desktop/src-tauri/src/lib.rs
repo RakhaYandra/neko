@@ -599,48 +599,9 @@ async fn tray_state(manager: &SharedManager, app: &tauri::AppHandle) -> tray::Tr
 
 async fn rebuild_tray(manager: &SharedManager, app: &tauri::AppHandle) {
     let state = tray_state(manager, app).await;
-    if let Err(e) = tray::build(app, &state) {
-        tracing::warn!(error = %e, "tray rebuild failed");
+    if let Err(e) = tray::sync(app, &state) {
+        tracing::warn!(error = %e, "tray sync failed");
     }
-}
-
-/// Trailing-edge coalescer for tray rebuilds on the hot event path.
-/// The event loop fires per IPC message; bursts (tool started/completed +
-/// status) would otherwise rebuild the whole menu once per event.
-/// Toggle/sweep/init paths bypass this and call `rebuild_tray` directly.
-#[derive(Debug, Default)]
-struct TrayDebouncer {
-    version: u64,
-}
-
-impl TrayDebouncer {
-    fn trigger(&mut self) -> u64 {
-        self.version += 1;
-        self.version
-    }
-
-    fn should_run(&self, v: u64) -> bool {
-        self.version == v
-    }
-}
-
-type SharedDebouncer = Arc<tokio::sync::Mutex<TrayDebouncer>>;
-
-async fn request_tray_rebuild(
-    deb: &SharedDebouncer,
-    manager: &SharedManager,
-    app: &tauri::AppHandle,
-) {
-    let v = deb.lock().await.trigger();
-    let deb = deb.clone();
-    let manager = manager.clone();
-    let app = app.clone();
-    tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-        if deb.lock().await.should_run(v) {
-            rebuild_tray(&manager, &app).await;
-        }
-    });
 }
 
 /// Native notification for the three important events (master §18).
@@ -778,9 +739,6 @@ pub fn run() {
             // Bounded so a flooding sender can't grow memory without limit.
             let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, String)>(512);
             let (ready_tx, ready_rx) = tokio::sync::oneshot::channel::<SharedManager>();
-            let tray_deb: SharedDebouncer =
-                Arc::new(tokio::sync::Mutex::new(TrayDebouncer::default()));
-            let tray_deb_consumer = tray_deb.clone();
             tauri::async_runtime::spawn(async move {
                 let pool = match sessions::storage::open().await {
                     Ok(p) => p,
@@ -820,7 +778,7 @@ pub fn run() {
                         maybe_notify(&handle, &t, &payload, project);
                     }
                     publish_snapshot(&handle, &snapshot);
-                    request_tray_rebuild(&tray_deb_consumer, &manager, &handle).await;
+                    rebuild_tray(&manager, &handle).await;
                 }
             });
             let manage_handle = app.handle().clone();
@@ -959,19 +917,6 @@ async fn toggle_setting(manager: &SharedManager, app: &tauri::AppHandle, id: &st
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn debouncer_coalesces_burst_to_last() {
-        let mut d = TrayDebouncer::default();
-        let mut last = 0;
-        for _ in 0..10 {
-            last = d.trigger();
-        }
-        // Only the newest version may run; older sleeps stay inert.
-        assert!(d.should_run(last));
-        assert!(!d.should_run(last - 1));
-        assert!(!d.should_run(1));
-    }
 
     fn argv(v: &[&str]) -> Vec<String> {
         v.iter().map(|s| s.to_string()).collect()
