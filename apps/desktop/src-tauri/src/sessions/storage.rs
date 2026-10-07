@@ -133,28 +133,6 @@ pub async fn prune_terminal(pool: &SqlitePool, days: i64) -> Result<(u64, u64), 
     Ok((se, ev))
 }
 
-/// Delete ALL terminal sessions (completed/error/disconnected) regardless
-/// of age, plus their events. Explicit user action (Clear button), unlike
-/// the 90-day `prune_terminal`. Returns (sessions, events) removed.
-pub async fn clear_disconnected(pool: &SqlitePool) -> Result<(u64, u64), sqlx::Error> {
-    let ev = sqlx::query(
-        "DELETE FROM session_events WHERE session_id IN
-         (SELECT id FROM sessions WHERE status IN ('completed', 'error', 'disconnected'))",
-    )
-    .execute(pool)
-    .await?
-    .rows_affected();
-    let se =
-        sqlx::query("DELETE FROM sessions WHERE status IN ('completed', 'error', 'disconnected')")
-            .execute(pool)
-            .await?
-            .rows_affected();
-    if se > 0 {
-        let _ = sqlx::query("VACUUM").execute(pool).await;
-    }
-    Ok((se, ev))
-}
-
 /// Mark every non-terminal session disconnected (startup recovery).
 pub async fn mark_all_disconnected(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
     let r = sqlx::query(
@@ -267,38 +245,5 @@ mod tests {
         let sessions = load_sessions(&pool).await.unwrap();
         assert_eq!(sessions.len(), 1);
         assert_eq!(sessions[0].status, SessionStatus::Disconnected);
-    }
-
-    #[tokio::test]
-    async fn clear_disconnected_keeps_active() {
-        let pool = mem_pool().await;
-        let now = now_ms();
-        for (id, status) in [("a", "working"), ("b", "completed"), ("c", "error")] {
-            sqlx::query(
-                "INSERT INTO sessions (id, status, started_at, last_activity_at, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?3, ?3, ?3)",
-            )
-            .bind(id)
-            .bind(status)
-            .bind(now)
-            .execute(&pool)
-            .await
-            .unwrap();
-            sqlx::query(
-                "INSERT INTO session_events (session_id, event_type, created_at)
-                 VALUES (?1, 'tool.started', ?2)",
-            )
-            .bind(id)
-            .bind(now)
-            .execute(&pool)
-            .await
-            .unwrap();
-        }
-        let (se, ev) = clear_disconnected(&pool).await.unwrap();
-        assert_eq!(se, 2);
-        assert_eq!(ev, 2);
-        let sessions = load_sessions(&pool).await.unwrap();
-        assert_eq!(sessions.len(), 1);
-        assert_eq!(sessions[0].id, "a");
     }
 }
